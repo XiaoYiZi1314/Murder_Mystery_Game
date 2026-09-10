@@ -1,0 +1,29 @@
+/* Original page CSS is supplied by the app-level, data-screen scoped stylesheet. */
+[data-screen="scripts"] [role="tabpanel"][hidden] {
+  display: none;
+}
+
+[data-screen="script-detail"] .catalog-word-cover {
+  width: 100%;
+  display: grid;
+  place-items: center;
+}
+
+:is([data-screen="dm-detail"], [data-screen="costume-detail"])
+  .pagefoot
+  .row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+@media (max-width: 620px) {
+  :is([data-screen="dm-detail"], [data-screen="costume-detail"])
+    .pagefoot
+    .row-between {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+}

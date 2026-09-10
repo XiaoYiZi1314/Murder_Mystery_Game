@@ -1,0 +1,14 @@
+node_modules
+.next
+.next-qa
+.git
+temp
+设计网站落地页
+.pi
+.env
+.env.local
+.env.*.local
+playwright-report
+test-results
+*.log
+*.tsbuildinfo

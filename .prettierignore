@@ -1,0 +1,11 @@
+node_modules
+.next
+.next-qa
+temp
+设计网站落地页
+public/assets/*.svg
+src/styles/tokens.css
+src/styles/reference.css
+package-lock.json
+playwright-report
+test-results

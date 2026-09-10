@@ -1,0 +1,173 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CUSTOMER
+  DM
+  MANAGER
+  BOSS
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum ScriptDifficulty {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum ScriptStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum CostumeStatus {
+  AVAILABLE
+  MAINTENANCE
+  RETIRED
+}
+
+enum GameSessionStatus {
+  SCHEDULED
+  OPEN
+  FULL
+  COMPLETED
+  CANCELLED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id            String       @id @default(cuid())
+  email         String?      @unique @db.VarChar(191)
+  phone         String?      @unique @db.VarChar(32)
+  passwordHash  String       @db.VarChar(255)
+  displayName   String       @db.VarChar(80)
+  avatarUrl     String?      @db.VarChar(2048)
+  role          UserRole     @default(CUSTOMER)
+  status        UserStatus   @default(ACTIVE)
+  points        Int          @default(0)
+  memberLevelId String?
+  memberLevel   MemberLevel? @relation(fields: [memberLevelId], references: [id], onDelete: SetNull)
+  dmProfile     Dm?
+  bookings      Booking[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([role, status])
+  @@index([memberLevelId])
+}
+
+model MemberLevel {
+  id              String   @id @default(cuid())
+  code            String   @unique @db.VarChar(32)
+  name            String   @db.VarChar(80)
+  rank            Int      @unique
+  pointsThreshold Int      @default(0)
+  discountRate    Decimal  @default(1.0000) @db.Decimal(5, 4)
+  benefits        Json?
+  users           User[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Script {
+  id               String           @id @default(cuid())
+  slug             String           @unique @db.VarChar(191)
+  title            String           @db.VarChar(160)
+  coverUrl         String           @db.VarChar(2048)
+  tagline          String?          @db.VarChar(255)
+  synopsis         String           @db.Text
+  durationMinutes  Int
+  minPlayers       Int
+  maxPlayers       Int
+  difficulty       ScriptDifficulty
+  pricePerPlayer   Decimal          @db.Decimal(10, 2)
+  status           ScriptStatus     @default(DRAFT)
+  tags             Json?
+  sessions         Session[]
+  costumes         Costume[]
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([status, difficulty])
+}
+
+model Dm {
+  id        String    @id @default(cuid())
+  userId    String    @unique
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio       String?   @db.Text
+  rating    Decimal?  @db.Decimal(3, 2)
+  sessions  Session[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Costume {
+  id             String        @id @default(cuid())
+  name           String        @db.VarChar(160)
+  imageUrl       String        @db.VarChar(2048)
+  description    String?       @db.Text
+  stockTotal     Int           @default(0)
+  stockAvailable Int           @default(0)
+  status         CostumeStatus @default(AVAILABLE)
+  scripts        Script[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([status])
+}
+
+model Session {
+  id          String            @id @default(cuid())
+  scriptId    String
+  script      Script            @relation(fields: [scriptId], references: [id], onDelete: Restrict)
+  dmId        String?
+  dm          Dm?               @relation(fields: [dmId], references: [id], onDelete: SetNull)
+  startsAt    DateTime
+  endsAt      DateTime
+  roomName    String            @db.VarChar(80)
+  capacity    Int
+  status      GameSessionStatus @default(SCHEDULED)
+  bookings    Booking[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@index([scriptId, startsAt])
+  @@index([dmId, startsAt])
+  @@index([status, startsAt])
+}
+
+model Booking {
+  id          String        @id @default(cuid())
+  bookingNo   String        @unique @db.VarChar(40)
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  sessionId   String
+  session     Session       @relation(fields: [sessionId], references: [id], onDelete: Restrict)
+  playerCount Int
+  totalAmount Decimal       @db.Decimal(10, 2)
+  status      BookingStatus @default(PENDING)
+  note        String?       @db.VarChar(500)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([sessionId, status])
+}

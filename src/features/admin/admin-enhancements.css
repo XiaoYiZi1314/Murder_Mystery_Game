@@ -1,0 +1,21 @@
+[data-screen^="admin"] .admin-demo-notice { margin-top: 16px; }
+[data-screen^="admin"] .admin-antd-modal .ant-modal-content { border-radius: var(--radius-lg, 18px); padding: 26px; }
+[data-screen^="admin"] .admin-antd-modal .ant-modal-header { margin-bottom: 22px; }
+[data-screen^="admin"] .admin-antd-modal .ant-modal-title { font-family: var(--font-display); font-size: 30px; line-height: 1.15; }
+[data-screen^="admin"] .admin-antd-modal .ant-modal-close { width: 40px; height: 40px; border: 1px solid var(--border); border-radius: 50%; background: var(--surface-warm); }
+[data-screen^="admin"] .admin-antd-modal .ant-form-item-label > label { font-size: 13px; color: var(--muted); }
+[data-screen^="admin"] .admin-antd-modal .ant-input,
+[data-screen^="admin"] .admin-antd-modal .ant-input-number,
+[data-screen^="admin"] .admin-antd-modal .ant-select-selector,
+[data-screen^="admin"] .admin-antd-modal .ant-picker { min-height: 44px; border-radius: var(--radius-sm, 8px); }
+[data-screen^="admin"] .admin-antd-modal .ant-input-number { width: 100%; }
+[data-screen^="admin"] .admin-antd-modal .ant-select-selection-wrap { align-self: center; }
+[data-screen^="admin"] .admin-form-actions { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-top: 8px; }
+[data-screen^="admin"] .admin-form-actions .ant-form-item { margin-bottom: 0; }
+[data-screen^="admin"] .admin-empty-row td { padding: 0; }
+[data-screen^="admin"] button:disabled { cursor: not-allowed; opacity: .52; }
+[data-screen="admin-ops"] .admin-redacted { font-family: var(--font-mono); letter-spacing: .04em; }
+@media (max-width: 560px) {
+  [data-screen^="admin"] .admin-antd-modal .ant-modal-content { padding: 20px; }
+  [data-screen^="admin"] .admin-form-actions { align-items: stretch; flex-direction: column; }
+}
