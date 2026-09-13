@@ -1,0 +1,197 @@
+﻿✖ 匿名列表 200 且无草稿；匿名详情 401 (2549.3762ms)
+✖ 顾客登录后可读详情；顾客看草稿详情 404；员工可读草稿 (573.5955ms)
+✖ 角色排序与剧本↔妆造/DM 双向关联 (1717.947ms)
+✔ 无效人数区间/缺失必填/非法价格 422（字段级定位） (203.0892ms)
+✖ 顾客/DM 不得写内容（CSRF 合法时 403），匿名 401 (77.1879ms)
+✖ 重复关联不重复记录（tag_ids/costume_ids/dm_ids 去重） (52.6238ms)
+✖ 标签管理：唯一 409；被引用删除 409；解除后删除成功 (101.4243ms)
+✖ 引用删除 409：被剧本引用的妆造不可物理删除；允许下架 (541.3859ms)
+✖ 排序/分页/搜索：价格双排序、latest、rating 无评价不伪造 (75.7548ms)
+✔ DM 自改展示字段成功；改他人 403；manager 可改任意 (1323.2428ms)
+✖ 员工内容写含同事务审计与 catalog.changed outbox (58.3604ms)
+✖ 条件更新：陈旧 updated_at 409，不覆盖他人修改 (35.1403ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 2
+ℹ fail 10
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7477.9722
+
+✖ failing tests:
+
+test at tests\integration\content.test.ts:2:8983
+✖ 匿名列表 200 且无草稿；匿名详情 401 (2549.3762ms)
+  AssertionError [ERR_ASSERTION]: 创建剧本期望 201，实际 500：{"code":5000,"message":"服务端内部错误","data":null}
+  
+  500 !== 201
+  
+      at createScriptOk (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:113:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:233:17)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 500,
+    expected: 201,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\integration\content.test.ts:2:9989
+✖ 顾客登录后可读详情；顾客看草稿详情 404；员工可读草稿 (573.5955ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  undefined !== ''
+  
+      at TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:252:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: '',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\integration\content.test.ts:2:11283
+✖ 角色排序与剧本↔妆造/DM 双向关联 (1717.947ms)
+  TypeError: Cannot read properties of null (reading 'data')
+      at TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:271:28)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7)
+
+test at tests\integration\content.test.ts:2:15088
+✖ 顾客/DM 不得写内容（CSRF 合法时 403），匿名 401 (77.1879ms)
+  AssertionError [ERR_ASSERTION]: {"code":1001,"message":"缺失 Idempotency-Key","data":null,"field_errors":{"Idempotency-Key":["写操作需携带幂等键"]}}
+  
+  422 !== 403
+  
+      at TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:371:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 422,
+    expected: 403,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\integration\content.test.ts:2:15939
+✖ 重复关联不重复记录（tag_ids/costume_ids/dm_ids 去重） (52.6238ms)
+  AssertionError [ERR_ASSERTION]: 创建剧本期望 201，实际 422：{"code":1001,"message":"字段校验失败","data":null,"field_errors":{"costume_ids":["包含非法 id"]}}
+  
+  422 !== 201
+  
+      at createScriptOk (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:113:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:380:13)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 422,
+    expected: 201,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\integration\content.test.ts:2:16855
+✖ 标签管理：唯一 409；被引用删除 409；解除后删除成功 (101.4243ms)
+  AssertionError [ERR_ASSERTION]: 被剧本引用的标签不能直接删除
+  
+  400 !== 409
+  
+      at TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:398:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 400,
+    expected: 409,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\integration\content.test.ts:2:18008
+✖ 引用删除 409：被剧本引用的妆造不可物理删除；允许下架 (541.3859ms)
+  AssertionError [ERR_ASSERTION]: 被引用妆造不得物理删除（不级联删剧本）
+  
+  405 !== 409
+  
+      at TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:412:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 405,
+    expected: 409,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\integration\content.test.ts:2:19152
+✖ 排序/分页/搜索：价格双排序、latest、rating 无评价不伪造 (75.7548ms)
+  AssertionError [ERR_ASSERTION]: 创建剧本期望 201，实际 500：{"code":5000,"message":"服务端内部错误","data":null}
+  
+  500 !== 201
+  
+      at createScriptOk (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:113:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:433:14)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 500,
+    expected: 201,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\integration\content.test.ts:2:23224
+✖ 员工内容写含同事务审计与 catalog.changed outbox (58.3604ms)
+  AssertionError [ERR_ASSERTION]: 创建剧本期望 201，实际 500：{"code":5000,"message":"服务端内部错误","data":null}
+  
+  500 !== 201
+  
+      at createScriptOk (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:113:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:504:14)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 500,
+    expected: 201,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\integration\content.test.ts:2:24813
+✖ 条件更新：陈旧 updated_at 409，不覆盖他人修改 (35.1403ms)
+  AssertionError [ERR_ASSERTION]: 创建剧本期望 201，实际 500：{"code":5000,"message":"服务端内部错误","data":null}
+  
+  500 !== 201
+  
+      at createScriptOk (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:113:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:525:14)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 500,
+    expected: 201,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

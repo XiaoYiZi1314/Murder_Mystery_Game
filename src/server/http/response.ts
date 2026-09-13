@@ -18,7 +18,7 @@ function safeJson(value: unknown): string {
 function json<T>(payload: ApiResponse<T>, status: number, headers?: HeadersInit): NextResponse {
   return new NextResponse(safeJson(payload), {
     status,
-    headers: { "Content-Type": "application/json; charset=utf-8", ...(headers ?? {}) },
+    headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control":"private, no-store", "Vary":"Cookie", ...(headers ?? {}) },
   });
 }
 

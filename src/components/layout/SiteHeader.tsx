@@ -1,10 +1,12 @@
 /* Original local logo markup preserves the supplied intrinsic sizing and CSS. */
 /* eslint-disable @next/next/no-img-element */
 "use client";
+import { AccountRoleBadge } from "@/features/member/components";
+import { NotificationBell } from "@/features/notifications/notification-bell";
 
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { Button, useToast } from "@/components/ui";
+import { Button } from "@/components/ui";
 
 type NavItem = { key: string; href: string; label: string; odId?: string };
 type HeaderProps = {
@@ -37,7 +39,6 @@ export function SiteHeader({
   onBooking,
   navItems,
 }: HeaderProps) {
-  const toast = useToast();
   const isHome = mode === "home" || mode === "landing";
   const isAdmin = mode === "admin";
   const items =
@@ -87,26 +88,7 @@ export function SiteHeader({
           {children ??
             (isHome ? (
               <>
-                <button
-                  className="bell"
-                  type="button"
-                  data-od-id="notification-button"
-                  aria-label="查看通知"
-                  title="查看通知"
-                  onClick={() => toast("当前没有新的通知。")}
-                >
-                  <svg
-                    width="19"
-                    height="19"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.7"
-                    aria-hidden="true"
-                  >
-                    <path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" />
-                  </svg>
-                </button>
+                <NotificationBell />
                 {onBooking ? (
                   <Button onClick={onBooking} data-od-id="nav-booking">
                     发起预约
@@ -122,7 +104,7 @@ export function SiteHeader({
                 <Button href="/" variant="secondary" data-od-id="nav-home">
                   回到 C 端
                 </Button>
-                <span className="tag">店长</span>
+                <AccountRoleBadge />
               </>
             ) : mode === "auth" ? (
               <Button href="/" variant="secondary" data-od-id="nav-back">

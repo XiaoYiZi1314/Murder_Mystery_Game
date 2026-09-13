@@ -1,0 +1,4 @@
+﻿
+> shisanwu-murder-mystery-game@0.1.0 typecheck
+> tsc --noEmit
+

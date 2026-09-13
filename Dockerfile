@@ -17,7 +17,11 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 RUN addgroup --system --gid 1001 nodejs \
-  && adduser --system --uid 1001 nextjs
+  && adduser --system --uid 1001 nextjs \
+  && mkdir -p /data/uploads /data/private-media \
+  && chown -R nextjs:nodejs /data \
+  && chmod 755 /data/uploads \
+  && chmod 700 /data/private-media
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 USER nextjs
 EXPOSE 3000

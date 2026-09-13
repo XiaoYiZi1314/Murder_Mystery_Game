@@ -1,0 +1,16 @@
+﻿
+> shisanwu-murder-mystery-game@0.1.0 lint
+> eslint .
+
+
+D:\Project\Murder_Mystery_Game\src\lib\api\contracts.ts
+  9:3  warning  'SettingKey' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts
+   34:5  error    'customerJar' is never reassigned. Use 'const' instead                 prefer-const
+  443:3  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+  444:3  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+
+✖ 4 problems (1 error, 3 warnings)
+  1 error and 0 warnings potentially fixable with the `--fix` option.
+

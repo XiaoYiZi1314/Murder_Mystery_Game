@@ -1,5 +1,7 @@
 import { prisma, type DbTx } from "../db/prisma";
 
+import { redis } from "../db/redis";
+import { bounded } from "../sessions/cache";
 const MAX_ATTEMPTS = 10;
 
 function backoffMs(attempts: number): number {
@@ -16,7 +18,12 @@ interface StaffEventPayload {
   password_changed?: boolean;
 }
 
-async function notifyStaffEvent(tx: DbTx, eventId: string, type: string, payload: StaffEventPayload): Promise<void> {
+async function notifyStaffEvent(
+  tx: DbTx,
+  eventId: string,
+  type: string,
+  payload: StaffEventPayload,
+): Promise<void> {
   if (!payload.userId) return;
   const userId = BigInt(payload.userId);
   let title = "";
@@ -49,6 +56,82 @@ async function notifyStaffEvent(tx: DbTx, eventId: string, type: string, payload
   });
 }
 
+const bookingTitles: Record<string, string> = {
+  "booking_request.created": "新的自主预约申请",
+  "booking_request.approved": "预约已通过并已占坑",
+  "booking_request.rejected": "预约申请未通过",
+  "booking.joined": "有新的团队报名",
+  "booking.cancelled": "有报名取消",
+  "session.capacity_reached": "场次人数已达最低人数（并非锁车）",
+  "session.cancelled": "场次已取消",
+};
+interface BookingEventPayload {
+  recipientUserIds?: string[];
+  subjectId?: string;
+  sessionId?: string;
+  player_count?: number;
+  booked_count?: number;
+  player_min?: number;
+  player_max?: number;
+}
+async function notifyBookingEvent(
+  tx: DbTx,
+  eventId: string,
+  type: string,
+  payload: BookingEventPayload,
+) {
+  const recipientIds = payload.recipientUserIds ?? [];
+  const recipients = await tx.user.findMany({
+    where: {
+      id: { in: recipientIds.map(BigInt) },
+      status: "active",
+      ...([
+        "booking_request.created",
+        "booking.joined",
+        "booking.cancelled",
+        "session.capacity_reached",
+      ].includes(type)
+        ? {
+            role: {
+              in: ["dm", "manager", "boss"] as ("dm" | "manager" | "boss")[],
+            },
+          }
+        : {}),
+    },
+    select: { id: true },
+  });
+  for (const user of recipients) {
+    const customer = [
+      "booking_request.approved",
+      "booking_request.rejected",
+      "session.cancelled",
+    ].includes(type);
+    const href = customer
+      ? "/me/booking"
+      : type === "booking_request.created"
+        ? "/admin/sessions/pending"
+        : "/admin/bookings";
+    const body =
+      type === "booking_request.approved"
+        ? `审核通过，已为你的团队占据 ${payload.player_count} 个位置，请在我的预约查看。`
+        : type === "session.capacity_reached"
+          ? `已报 ${payload.booked_count} / 最低 ${payload.player_min} / 上限 ${payload.player_max}；仍需商家手动处理锁车。`
+          : "请打开对应页面查看最新状态。";
+    await tx.notification.upsert({
+      where: { eventId_userId: { eventId, userId: user.id } },
+      update: {},
+      create: {
+        eventId,
+        userId: user.id,
+        type,
+        title: bookingTitles[type],
+        body,
+        href,
+      },
+    });
+  }
+}
+
 export interface OutboxBatchResult {
   processed: number;
   delivered: number;
@@ -59,10 +142,17 @@ export interface OutboxBatchResult {
  * 拉取到期 pending 事件逐条投递；单条失败不影响同批其他事件。
  * 未知类型直接标记 delivered 并告警（防毒丸事件卡死队列）。
  */
-export async function processOutboxBatch(limit = 20): Promise<OutboxBatchResult> {
+export async function processOutboxBatch(
+  limit = 20,
+  eventIds?: bigint[],
+): Promise<OutboxBatchResult> {
   const now = new Date();
   const rows = await prisma.eventOutbox.findMany({
-    where: { status: "pending", OR: [{ nextRetryAt: null }, { nextRetryAt: { lte: now } }] },
+    where: {
+      ...(eventIds ? { id: { in: eventIds } } : {}),
+      status: "pending",
+      OR: [{ nextRetryAt: null }, { nextRetryAt: { lte: now } }],
+    },
     orderBy: { id: "asc" },
     take: limit,
   });
@@ -71,31 +161,72 @@ export async function processOutboxBatch(limit = 20): Promise<OutboxBatchResult>
   for (const row of rows) {
     try {
       const payload = (row.payloadJson ?? {}) as StaffEventPayload;
+      // Redis is a retryable side effect, never part of the original business transaction.
+      if (bookingTitles[row.type] || row.type === "session.changed") {
+        await bounded(redis().incr("c3:sessions:epoch"));
+        for (const uid of (row.payloadJson as BookingEventPayload)
+          .recipientUserIds ?? [])
+          await bounded(
+            redis().set(
+              "c3:notification-signal:" + uid,
+              String(row.id),
+              "EX",
+              86400,
+            ),
+          );
+      }
       await prisma.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT id FROM event_outbox WHERE id=${row.id} FOR UPDATE`;
+        const current = await tx.eventOutbox.findUniqueOrThrow({
+          where: { id: row.id },
+        });
+        if (current.status !== "pending") return;
         if (row.type === "staff.created" || row.type === "staff.updated") {
           await notifyStaffEvent(tx, `outbox:${row.id}`, row.type, payload);
+        } else if (bookingTitles[row.type]) {
+          await notifyBookingEvent(
+            tx,
+            `outbox:${row.id}`,
+            row.type,
+            row.payloadJson as BookingEventPayload,
+          );
+        } else if (row.type === "session.changed") {
+          // Redis invalidation above; no customer notification for a normal edit.
+        } else if (row.type === "catalog.changed") {
+          // C2 public reads are request-time/no-store. No shared content cache to invalidate; no customer notification.
         } else {
-           
-          console.warn(`[outbox] 未知事件类型 ${row.id}(${row.type})，跳过投递`);
+          console.warn(
+            `[outbox] 未知事件类型 ${row.id}(${row.type})，跳过投递`,
+          );
         }
         await tx.eventOutbox.update({
           where: { id: row.id },
-          data: { status: "delivered", attempts: row.attempts + 1, deliveredAt: new Date() },
+          data: {
+            status: "delivered",
+            attempts: row.attempts + 1,
+            deliveredAt: new Date(),
+          },
         });
       });
       delivered += 1;
     } catch (error: unknown) {
       const attempts = row.attempts + 1;
       const isDead = attempts >= MAX_ATTEMPTS;
-      await prisma.eventOutbox.update({
-        where: { id: row.id },
+      await prisma.eventOutbox.updateMany({
+        where: { id: row.id, status: "pending" },
         data: isDead
           ? { status: "dead", attempts }
-          : { attempts, nextRetryAt: new Date(Date.now() + backoffMs(attempts)) },
+          : {
+              attempts,
+              nextRetryAt: new Date(Date.now() + backoffMs(attempts)),
+            },
       });
       if (isDead) dead += 1;
-       
-      console.error(`[outbox] 事件 ${row.id}(${row.type}) 投递失败（第 ${attempts} 次）：`, error);
+
+      console.error(
+        `[outbox] 事件 ${row.id}(${row.type}) 投递失败（第 ${attempts} 次）：`,
+        error,
+      );
     }
   }
   return { processed: rows.length, delivered, dead };

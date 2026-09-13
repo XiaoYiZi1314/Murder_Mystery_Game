@@ -12,3 +12,10 @@ playwright-report
 test-results
 *.log
 *.tsbuildinfo
+
+var
+backups
+test-results
+playwright-report
+.env*
+!.env.example

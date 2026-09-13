@@ -5,8 +5,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button, Card, Input, useToast } from "@/components/ui";
 import { Screen, SiteFooter, SiteHeader } from "@/components/layout";
-import { apiFetch, clearCsrfCache, errorMessage, getCsrfToken } from "@/lib/api/client";
+import {
+  apiFetch,
+  clearCsrfCache,
+  errorMessage,
+  getCsrfToken,
+} from "@/lib/api/client";
 import type { MeDto } from "@/lib/api/contracts";
+import { RecentBookings } from "@/features/booking/my-bookings";
 import { MemberBadge, MemberHeaderActions, WalletLedger } from "./components";
 import { ledgerEntries } from "./data";
 
@@ -61,7 +67,11 @@ export function MePage({ initialTab = "overview" }: { initialTab?: MeTab }) {
     setSaving(true);
     try {
       const csrf = await getCsrfToken();
-      const updated = await apiFetch<MeDto>("/api/me", { method: "PATCH", body: { nickname: next }, csrf });
+      const updated = await apiFetch<MeDto>("/api/me", {
+        method: "PATCH",
+        body: { nickname: next },
+        csrf,
+      });
       setMe(updated);
       setNickname(updated.nickname);
       toast("昵称已更新");
@@ -129,44 +139,25 @@ export function MePage({ initialTab = "overview" }: { initialTab?: MeTab }) {
                 data-od-id="member-balance"
               >
                 <span className="label">可用储值余额</span>
-                <div className="amount num">¥ {me ? Number(me.balance).toFixed(2) : "…"}</div>
+                <div className="amount num">
+                  ¥ {me ? Number(me.balance).toFixed(2) : "…"}
+                </div>
                 <div className="row-between mini-stat">
                   <span className="label">当前积分</span>
-                  <strong className="num">{me ? me.points.toLocaleString("zh-CN") : "…"}</strong>
-                  <span className="label">{me?.member_level ? `会员等级 ${me.member_level.name}` : "…"}</span>
+                  <strong className="num">
+                    {me ? me.points.toLocaleString("zh-CN") : "…"}
+                  </strong>
+                  <span className="label">
+                    {me?.member_level
+                      ? `会员等级 ${me.member_level.name}`
+                      : "…"}
+                  </span>
                 </div>
               </div>
 
               <div className="grid-2">
                 <Card id="bookings" data-od-id="my-bookings">
-                  <div className="row-between">
-                    <div>
-                      <p className="eyebrow">最近预约</p>
-                      <h3>雾港来信 · 周六下午场</h3>
-                    </div>
-                    <span className="status open">已报名</span>
-                  </div>
-                  <p
-                    style={{
-                      color: "var(--muted)",
-                      fontSize: 14,
-                      marginBottom: 0,
-                    }}
-                  >
-                    06 月 14 日 周六 · 13:30 · 已报 1 人 · 还差 2 人
-                  </p>
-                  <div className="row" style={{ marginTop: 18 }}>
-                    <Button variant="secondary" href="/sessions">
-                      查看场次
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      type="button"
-                      onClick={() => toast("未锁车前可取消报名")}
-                    >
-                      取消规则
-                    </Button>
-                  </div>
+                  <RecentBookings />
                 </Card>
 
                 <Card id="member" data-od-id="member-benefits">
@@ -177,12 +168,20 @@ export function MePage({ initialTab = "overview" }: { initialTab?: MeTab }) {
                       : "…"}
                   </h3>
                   <div style={{ margin: "15px 0 9px" }} className="progress">
-                    <span style={{ width: `${Math.min(100, (me?.member_level?.rank ?? 0) * 20)}%` }} />
+                    <span
+                      style={{
+                        width: `${Math.min(100, (me?.member_level?.rank ?? 0) * 20)}%`,
+                      }}
+                    />
                   </div>
                   <div className="row-between">
-                    <span className="meta">累计储值 ¥{me ? Number(me.total_topup).toFixed(0) : "…"}</span>
                     <span className="meta">
-                      {me?.member_level ? `当前门槛 ¥${Number(me.member_level.topup_threshold).toFixed(0)}` : "…"}
+                      累计储值 ¥{me ? Number(me.total_topup).toFixed(0) : "…"}
+                    </span>
+                    <span className="meta">
+                      {me?.member_level
+                        ? `当前门槛 ¥${Number(me.member_level.topup_threshold).toFixed(0)}`
+                        : "…"}
                     </span>
                   </div>
                   <p
@@ -192,7 +191,11 @@ export function MePage({ initialTab = "overview" }: { initialTab?: MeTab }) {
                       marginBottom: 0,
                     }}
                   >
-                    当前可享剧本 {(Number(me?.member_level?.discount_rate ?? 1) * 10).toFixed(1)} 折，生日月赠积分。
+                    当前可享剧本{" "}
+                    {(
+                      Number(me?.member_level?.discount_rate ?? 1) * 10
+                    ).toFixed(1)}{" "}
+                    折，生日月赠积分。
                   </p>
                   <Button variant="ghost" className="btn-arrow" href="/gifts">
                     浏览积分礼品
@@ -238,10 +241,20 @@ export function MePage({ initialTab = "overview" }: { initialTab?: MeTab }) {
                   />
                 </div>
                 <div className="row" style={{ marginTop: 18 }}>
-                  <Button variant="secondary" type="button" loading={saving} onClick={() => void saveNickname()}>
+                  <Button
+                    variant="secondary"
+                    type="button"
+                    loading={saving}
+                    onClick={() => void saveNickname()}
+                  >
                     保存昵称
                   </Button>
-                  <Button variant="ghost" type="button" loading={signingOut} onClick={() => void signOut()}>
+                  <Button
+                    variant="ghost"
+                    type="button"
+                    loading={signingOut}
+                    onClick={() => void signOut()}
+                  >
                     退出登录
                   </Button>
                 </div>

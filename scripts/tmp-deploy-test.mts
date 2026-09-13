@@ -1,0 +1,15 @@
+import { spawnSync } from "node:child_process";
+import { loadEnvFile } from "../src/server/config";
+
+loadEnvFile(".env.test");
+const testUrl = process.env.TEST_DATABASE_URL;
+if (!testUrl) throw new Error("TEST_DATABASE_URL 缺失");
+
+const r = spawnSync("npx", ["prisma", "migrate", "deploy"], {
+  env: { ...process.env, DATABASE_URL: testUrl },
+  encoding: "utf-8",
+  shell: process.platform === "win32",
+});
+process.stdout.write(r.stdout ?? "");
+process.stderr.write(r.stderr ?? "");
+process.exit(r.status ?? 1);

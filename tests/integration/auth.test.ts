@@ -3,6 +3,7 @@
  * 前置：`npm run dev:test` 已启动（.env.test），测试库已 migrate + seed。
  * 限流口径：LOGIN_RATE_LIMIT_MAX=5（同 IP / 同手机号各 5 次，第 6 次 429）。
  */
+import { randomBytes } from "node:crypto";
 import assert from "node:assert/strict";
 import test, { after, before } from "node:test";
 import { Jar, api, cleanupTestUsers, ensureSeeded, getCsrf, trackPhone, uniquePhone } from "./helpers";
@@ -10,10 +11,11 @@ import { Jar, api, cleanupTestUsers, ensureSeeded, getCsrf, trackPhone, uniquePh
 const PASSWORD = "test-password-1";
 
 let ipSeq = 100;
+const runIp=randomBytes(6).toString("hex").match(/.{4}/g)!.join(":");
 /** 每组用例独立 X-Forwarded-For，避免登录/IP 限流桶互相污染。 */
 function freshIp(): Record<string, string> {
   ipSeq += 1;
-  return { "X-Forwarded-For": `10.99.7.${ipSeq}` };
+  return { "X-Forwarded-For": `fd00:${runIp}:0:0:0:${ipSeq.toString(16)}` };
 }
 
 before(async () => {

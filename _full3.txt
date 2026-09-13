@@ -1,0 +1,375 @@
+﻿
+> shisanwu-murder-mystery-game@0.1.0 test:integration
+> node --import tsx --test --test-concurrency=1 tests/integration/*.test.ts
+
+✔ AC_C1_021 注册成功下发会话，默认 customer + 见雾 (108.0333ms)
+✖ AC_C1_022 注册忽略 body.role，重复手机号 409 (38.3531ms)
+✔ 注册输入非法返回 422 + 字段明细 (21.2562ms)
+✔ AC_C1_023 登录成功建新会话；密码错/账号不存在统一 401/2004 (96.8434ms)
+✖ AC_C1_024 五次失败后第 6 次即使密码正确也 429（fail-closed） (54.0597ms)
+✖ 登录成功清零同手机号计数 (62.8532ms)
+✔ AC_C1_025 匿名取 CSRF 401；已登录写请求缺/错令牌 403 (172.8066ms)
+✔ PATCH /me 只读字段 422；登出后会话失效 (90.5374ms)
+✔ 匿名写请求缺 Origin 403 (19.6646ms)
+✖ 匿名列表 200 且无草稿；匿名详情 401 (417.8886ms)
+✖ 顾客登录后可读详情；顾客看草稿详情 404；员工可读草稿 (0.9327ms)
+✖ 角色排序与剧本↔妆造/DM 双向关联 (0.185ms)
+✖ 无效人数区间/缺失必填/非法价格 422（字段级定位） (0.0684ms)
+✖ 顾客/DM 不得写内容（CSRF 合法时 403），匿名 401 (0.073ms)
+✖ 重复关联不重复记录（tag_ids/costume_ids/dm_ids 去重） (0.0567ms)
+✖ 标签管理：唯一 409；被引用删除 409；解除后删除成功 (0.0484ms)
+✖ 引用删除 409：被剧本引用的妆造不可物理删除；允许下架 (0.0555ms)
+✖ 排序/分页/搜索：价格双排序、latest、rating 无评价不伪造 (0.0795ms)
+✖ DM 自改展示字段成功；改他人 403；manager 可改任意 (0.0951ms)
+✖ 员工内容写含同事务审计与 catalog.changed outbox (0.0437ms)
+✖ 条件更新：陈旧 updated_at 409，不覆盖他人修改 (0.0331ms)
+✔ AC_C1_01 seed 两次五级精确且无重复 (25.551ms)
+✔ AC_C1_01b 手机号唯一约束生效 (15.7821ms)
+✔ AC_C1_01c 大整数 ID 与金额无损往返 (6.2215ms)
+✔ AC_C1_01d 缺失配置启动即报明确错误 (0.2397ms)
+[outbox] 事件 219(staff.created) 投递失败（第 1 次）： PrismaClientKnownRequestError: 
+Invalid `tx.notification.upsert()` invocation in
+D:\Project\Murder_Mystery_Game\src\server\notifications\dispatch.ts:45:25
+
+  42   return;
+  43 }
+  44 // eventId + userId 唯一约束保证投递幂等：重复投递不会产生第二条通知。
+→ 45 await tx.notification.upsert(
+Foreign key constraint violated on the fields: (`userId`)
+    at ei.handleRequestError (D:\Project\Murder_Mystery_Game\node_modules\@prisma\client\src\runtime\RequestHandler.ts:228:13)
+    at ei.handleAndLogRequestError (D:\Project\Murder_Mystery_Game\node_modules\@prisma\client\src\runtime\RequestHandler.ts:174:12)
+    at ei.request (D:\Project\Murder_Mystery_Game\node_modules\@prisma\client\src\runtime\RequestHandler.ts:143:12)
+    at async a (D:\Project\Murder_Mystery_Game\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:833:24)
+    at async notifyStaffEvent (D:\Project\Murder_Mystery_Game\src\server\notifications\dispatch.ts:45:3)
+    at async <anonymous> (D:\Project\Murder_Mystery_Game\src\server\notifications\dispatch.ts:76:11)
+    at async Proxy._transactionWithCallback (D:\Project\Murder_Mystery_Game\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:722:18)
+    at async processOutboxBatch (D:\Project\Murder_Mystery_Game\src\server\notifications\dispatch.ts:74:7)
+    at async TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\outbox.test.ts:73:17)
+    at async Test.run (node:internal/test_runner/test:1389:7) {
+  code: 'P2003',
+  meta: { modelName: 'Notification', constraint: [ 'userId' ] },
+  clientVersion: '6.19.3'
+}
+[outbox] 事件 220(staff.created) 投递失败（第 1 次）： PrismaClientKnownRequestError: 
+Invalid `tx.notification.upsert()` invocation in
+D:\Project\Murder_Mystery_Game\src\server\notifications\dispatch.ts:45:25
+
+  42   return;
+  43 }
+  44 // eventId + userId 唯一约束保证投递幂等：重复投递不会产生第二条通知。
+→ 45 await tx.notification.upsert(
+Foreign key constraint violated on the fields: (`userId`)
+    at ei.handleRequestError (D:\Project\Murder_Mystery_Game\node_modules\@prisma\client\src\runtime\RequestHandler.ts:228:13)
+    at ei.handleAndLogRequestError (D:\Project\Murder_Mystery_Game\node_modules\@prisma\client\src\runtime\RequestHandler.ts:174:12)
+    at ei.request (D:\Project\Murder_Mystery_Game\node_modules\@prisma\client\src\runtime\RequestHandler.ts:143:12)
+    at async a (D:\Project\Murder_Mystery_Game\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:833:24)
+    at async notifyStaffEvent (D:\Project\Murder_Mystery_Game\src\server\notifications\dispatch.ts:45:3)
+    at async <anonymous> (D:\Project\Murder_Mystery_Game\src\server\notifications\dispatch.ts:76:11)
+    at async Proxy._transactionWithCallback (D:\Project\Murder_Mystery_Game\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:722:18)
+    at async processOutboxBatch (D:\Project\Murder_Mystery_Game\src\server\notifications\dispatch.ts:74:7)
+    at async TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\outbox.test.ts:73:17)
+    at async Test.run (node:internal/test_runner/test:1389:7) {
+  code: 'P2003',
+  meta: { modelName: 'Notification', constraint: [ 'userId' ] },
+  clientVersion: '6.19.3'
+}
+[outbox] 事件 221(staff.created) 投递失败（第 1 次）： PrismaClientKnownRequestError: 
+Invalid `tx.notification.upsert()` invocation in
+D:\Project\Murder_Mystery_Game\src\server\notifications\dispatch.ts:45:25
+
+  42   return;
+  43 }
+  44 // eventId + userId 唯一约束保证投递幂等：重复投递不会产生第二条通知。
+→ 45 await tx.notification.upsert(
+Foreign key constraint violated on the fields: (`userId`)
+    at ei.handleRequestError (D:\Project\Murder_Mystery_Game\node_modules\@prisma\client\src\runtime\RequestHandler.ts:228:13)
+    at ei.handleAndLogRequestError (D:\Project\Murder_Mystery_Game\node_modules\@prisma\client\src\runtime\RequestHandler.ts:174:12)
+    at ei.request (D:\Project\Murder_Mystery_Game\node_modules\@prisma\client\src\runtime\RequestHandler.ts:143:12)
+    at async a (D:\Project\Murder_Mystery_Game\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:833:24)
+    at async notifyStaffEvent (D:\Project\Murder_Mystery_Game\src\server\notifications\dispatch.ts:45:3)
+    at async <anonymous> (D:\Project\Murder_Mystery_Game\src\server\notifications\dispatch.ts:76:11)
+    at async Proxy._transactionWithCallback (D:\Project\Murder_Mystery_Game\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:722:18)
+    at async processOutboxBatch (D:\Project\Murder_Mystery_Game\src\server\notifications\dispatch.ts:74:7)
+    at async TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\outbox.test.ts:73:17)
+    at async Test.run (node:internal/test_runner/test:1389:7) {
+  code: 'P2003',
+  meta: { modelName: 'Notification', constraint: [ 'userId' ] },
+  clientVersion: '6.19.3'
+}
+✔ 建员工入队 staff.created，投递后通知 exactly-once (196.2262ms)
+✔ 改密入队 staff.updated，投递通知员工 (93.7473ms)
+✔ 非 BOSS 访问员工接口 403，匿名 401 (220.6391ms)
+✔ BOSS 列表默认仅 dm+manager，role 筛选非法 422 (119.0788ms)
+✔ 建 DM 自动建档并写审计；非法角色/缺幂等键 422；重复手机号 409 (104.8375ms)
+✔ 建员工幂等：同键同体质重放，同键异体 409/3201 (72.7331ms)
+✔ 改员工昵称/转岗；manager 转 DM 补档案；非法 id 404 (403.4726ms)
+✔ 禁用吊销员工全部会话；改密亦然 (306.461ms)
+✔ manager 与 dm 均不得访问员工管理 (86.701ms)
+ℹ tests 34
+ℹ suites 0
+ℹ pass 19
+ℹ fail 15
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3485.7012
+
+✖ failing tests:
+
+test at tests\integration\auth.test.ts:2:2920
+✖ AC_C1_022 注册忽略 body.role，重复手机号 409 (38.3531ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  429 !== 409
+  
+      at TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\auth.test.ts:71:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 429,
+    expected: 409,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\integration\auth.test.ts:2:5330
+✖ AC_C1_024 五次失败后第 6 次即使密码正确也 429（fail-closed） (54.0597ms)
+  AssertionError [ERR_ASSERTION]: 第 1 次失败期望 401，实际 429
+  
+  429 !== 401
+  
+      at TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\auth.test.ts:138:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 429,
+    expected: 401,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\integration\auth.test.ts:2:6036
+✖ 登录成功清零同手机号计数 (62.8532ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  429 !== 401
+  
+      at TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\auth.test.ts:158:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 429,
+    expected: 401,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\integration\content.test.ts:2:9072
+✖ 匿名列表 200 且无草稿；匿名详情 401 (417.8886ms)
+  AssertionError [ERR_ASSERTION]: {"code":2003,"message":"注册过于频繁，请稍后再试","data":null}
+  
+  429 !== 201
+  
+      at TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:201:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestHook.run (node:internal/test_runner/test:1389:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 429,
+    expected: 201,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\integration\content.test.ts:2:10078
+✖ 顾客登录后可读详情；顾客看草稿详情 404；员工可读草稿 (0.9327ms)
+  AssertionError [ERR_ASSERTION]: {"code":2003,"message":"注册过于频繁，请稍后再试","data":null}
+  
+  429 !== 201
+  
+      at TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:201:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestHook.run (node:internal/test_runner/test:1389:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 429,
+    expected: 201,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\integration\content.test.ts:2:11372
+✖ 角色排序与剧本↔妆造/DM 双向关联 (0.185ms)
+  AssertionError [ERR_ASSERTION]: {"code":2003,"message":"注册过于频繁，请稍后再试","data":null}
+  
+  429 !== 201
+  
+      at TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:201:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestHook.run (node:internal/test_runner/test:1389:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 429,
+    expected: 201,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\integration\content.test.ts:2:13890
+✖ 无效人数区间/缺失必填/非法价格 422（字段级定位） (0.0684ms)
+  AssertionError [ERR_ASSERTION]: {"code":2003,"message":"注册过于频繁，请稍后再试","data":null}
+  
+  429 !== 201
+  
+      at TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:201:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestHook.run (node:internal/test_runner/test:1389:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 429,
+    expected: 201,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\integration\content.test.ts:2:15135
+✖ 顾客/DM 不得写内容（CSRF 合法时 403），匿名 401 (0.073ms)
+  AssertionError [ERR_ASSERTION]: {"code":2003,"message":"注册过于频繁，请稍后再试","data":null}
+  
+  429 !== 201
+  
+      at TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:201:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestHook.run (node:internal/test_runner/test:1389:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 429,
+    expected: 201,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\integration\content.test.ts:2:16050
+✖ 重复关联不重复记录（tag_ids/costume_ids/dm_ids 去重） (0.0567ms)
+  AssertionError [ERR_ASSERTION]: {"code":2003,"message":"注册过于频繁，请稍后再试","data":null}
+  
+  429 !== 201
+  
+      at TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:201:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestHook.run (node:internal/test_runner/test:1389:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 429,
+    expected: 201,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\integration\content.test.ts:2:17198
+✖ 标签管理：唯一 409；被引用删除 409；解除后删除成功 (0.0484ms)
+  AssertionError [ERR_ASSERTION]: {"code":2003,"message":"注册过于频繁，请稍后再试","data":null}
+  
+  429 !== 201
+  
+      at TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:201:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestHook.run (node:internal/test_runner/test:1389:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 429,
+    expected: 201,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\integration\content.test.ts:2:18388
+✖ 引用删除 409：被剧本引用的妆造不可物理删除；允许下架 (0.0555ms)
+  AssertionError [ERR_ASSERTION]: {"code":2003,"message":"注册过于频繁，请稍后再试","data":null}
+  
+  429 !== 201
+  
+      at TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:201:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestHook.run (node:internal/test_runner/test:1389:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 429,
+    expected: 201,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\integration\content.test.ts:2:19566
+✖ 排序/分页/搜索：价格双排序、latest、rating 无评价不伪造 (0.0795ms)
+  AssertionError [ERR_ASSERTION]: {"code":2003,"message":"注册过于频繁，请稍后再试","data":null}
+  
+  429 !== 201
+  
+      at TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:201:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestHook.run (node:internal/test_runner/test:1389:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 429,
+    expected: 201,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\integration\content.test.ts:2:22504
+✖ DM 自改展示字段成功；改他人 403；manager 可改任意 (0.0951ms)
+  AssertionError [ERR_ASSERTION]: {"code":2003,"message":"注册过于频繁，请稍后再试","data":null}
+  
+  429 !== 201
+  
+      at TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:201:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestHook.run (node:internal/test_runner/test:1389:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 429,
+    expected: 201,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\integration\content.test.ts:2:23668
+✖ 员工内容写含同事务审计与 catalog.changed outbox (0.0437ms)
+  AssertionError [ERR_ASSERTION]: {"code":2003,"message":"注册过于频繁，请稍后再试","data":null}
+  
+  429 !== 201
+  
+      at TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:201:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestHook.run (node:internal/test_runner/test:1389:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 429,
+    expected: 201,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\integration\content.test.ts:2:25257
+✖ 条件更新：陈旧 updated_at 409，不覆盖他人修改 (0.0331ms)
+  AssertionError [ERR_ASSERTION]: {"code":2003,"message":"注册过于频繁，请稍后再试","data":null}
+  
+  429 !== 201
+  
+      at TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:201:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestHook.run (node:internal/test_runner/test:1389:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 429,
+    expected: 201,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

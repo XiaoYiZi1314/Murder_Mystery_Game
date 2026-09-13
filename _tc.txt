@@ -1,0 +1,70 @@
+﻿
+> shisanwu-murder-mystery-game@0.1.0 typecheck
+> tsc --noEmit
+
+src/app/api/admin/costumes/[id]/route.ts(14,49): error TS2322: Type 'Actor | null' is not assignable to type 'Actor'.
+  Type 'null' is not assignable to type 'Actor'.
+src/app/api/admin/costumes/[id]/route.ts(26,46): error TS2322: Type 'Actor | null' is not assignable to type 'Actor'.
+  Type 'null' is not assignable to type 'Actor'.
+src/app/api/admin/costumes/route.ts(26,45): error TS2322: Type 'Actor | null' is not assignable to type 'Actor'.
+  Type 'null' is not assignable to type 'Actor'.
+src/app/api/admin/dms/[id]/route.ts(16,51): error TS2322: Type 'Actor | null' is not assignable to type 'Actor'.
+  Type 'null' is not assignable to type 'Actor'.
+src/app/api/admin/scripts/[id]/route.ts(14,48): error TS2322: Type 'Actor | null' is not assignable to type 'Actor'.
+  Type 'null' is not assignable to type 'Actor'.
+src/app/api/admin/scripts/[id]/route.ts(26,45): error TS2322: Type 'Actor | null' is not assignable to type 'Actor'.
+  Type 'null' is not assignable to type 'Actor'.
+src/app/api/admin/scripts/route.ts(26,44): error TS2322: Type 'Actor | null' is not assignable to type 'Actor'.
+  Type 'null' is not assignable to type 'Actor'.
+src/app/api/admin/tags/[id]/route.ts(14,45): error TS2322: Type 'Actor | null' is not assignable to type 'Actor'.
+  Type 'null' is not assignable to type 'Actor'.
+src/app/api/admin/tags/[id]/route.ts(26,42): error TS2322: Type 'Actor | null' is not assignable to type 'Actor'.
+  Type 'null' is not assignable to type 'Actor'.
+src/app/api/admin/tags/route.ts(22,41): error TS2322: Type 'Actor | null' is not assignable to type 'Actor'.
+  Type 'null' is not assignable to type 'Actor'.
+src/server/catalog/commands.ts(55,33): error TS2349: This expression is not callable.
+  Each member of the union type '(<T extends CostumeCountArgs>(args?: Subset<T, CostumeCountArgs<DefaultArgs>> | undefined) => PrismaPromise<T extends Record_2<"select", any> ? T["select"] extends true ? number : { [P in keyof T["select"]]: P extends keyof CostumeCountAggregateOutputType ? CostumeCountAggregateOutputType[P] : never; } : number>) | ...' has signatures, but none of those signatures are compatible with each other.
+src/server/catalog/commands.ts(95,54): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, string[]>'.
+src/server/catalog/commands.ts(181,51): error TS2694: Namespace '"D:/Project/Murder_Mystery_Game/node_modules/.prisma/client/index".Prisma' has no exported member 'ScriptStatus'.
+src/server/catalog/commands.ts(241,66): error TS2694: Namespace '"D:/Project/Murder_Mystery_Game/node_modules/.prisma/client/index".Prisma' has no exported member 'ScriptStatus'.
+src/server/catalog/commands.ts(251,11): error TS2322: Type 'ScriptUpdateManyMutationInput | CostumeUpdateManyMutationInput | DmUpdateManyMutationInput' is not assignable to type '(Without<ScriptUpdateManyMutationInput, ScriptUncheckedUpdateManyInput> & ScriptUncheckedUpdateManyInput) | (Without<...> & ScriptUpdateManyMutationInput)'.
+  Type 'DmUpdateManyMutationInput' is not assignable to type '(Without<ScriptUpdateManyMutationInput, ScriptUncheckedUpdateManyInput> & ScriptUncheckedUpdateManyInput) | (Without<...> & ScriptUpdateManyMutationInput)'.
+    Type 'DmUpdateManyMutationInput' is not assignable to type 'Without<ScriptUncheckedUpdateManyInput, ScriptUpdateManyMutationInput> & ScriptUpdateManyMutationInput'.
+      Type 'DmUpdateManyMutationInput' is not assignable to type 'ScriptUpdateManyMutationInput'.
+        Types of property 'status' are incompatible.
+          Type 'DmStatus | EnumDmStatusFieldUpdateOperationsInput | undefined' is not assignable to type 'ScriptStatus | EnumScriptStatusFieldUpdateOperationsInput | undefined'.
+            Type 'EnumDmStatusFieldUpdateOperationsInput' is not assignable to type 'ScriptStatus | EnumScriptStatusFieldUpdateOperationsInput | undefined'.
+              Type 'EnumDmStatusFieldUpdateOperationsInput' is not assignable to type 'EnumScriptStatusFieldUpdateOperationsInput'.
+                Types of property 'set' are incompatible.
+                  Type 'DmStatus | undefined' is not assignable to type 'ScriptStatus | undefined'.
+                    Type '"active"' is not assignable to type 'ScriptStatus | undefined'.
+src/server/catalog/commands.ts(331,7): error TS2322: Type 'InputJsonValue | null' is not assignable to type 'NullableJsonNullValueInput | InputJsonValue | undefined'.
+  Type 'null' is not assignable to type 'NullableJsonNullValueInput | InputJsonValue | undefined'.
+src/server/catalog/commands.ts(333,49): error TS2694: Namespace '"D:/Project/Murder_Mystery_Game/node_modules/.prisma/client/index".Prisma' has no exported member 'CostumeStatus'.
+src/server/catalog/commands.ts(365,66): error TS2694: Namespace '"D:/Project/Murder_Mystery_Game/node_modules/.prisma/client/index".Prisma' has no exported member 'CostumeStatus'.
+src/server/catalog/commands.ts(372,9): error TS2322: Type 'ScriptUpdateManyMutationInput | CostumeUpdateManyMutationInput | DmUpdateManyMutationInput' is not assignable to type '(Without<CostumeUpdateManyMutationInput, CostumeUncheckedUpdateManyInput> & CostumeUncheckedUpdateManyInput) | (Without<...> & CostumeUpdateManyMutationInput)'.
+  Type 'DmUpdateManyMutationInput' is not assignable to type '(Without<CostumeUpdateManyMutationInput, CostumeUncheckedUpdateManyInput> & CostumeUncheckedUpdateManyInput) | (Without<...> & CostumeUpdateManyMutationInput)'.
+    Type 'DmUpdateManyMutationInput' is not assignable to type 'Without<CostumeUncheckedUpdateManyInput, CostumeUpdateManyMutationInput> & CostumeUpdateManyMutationInput'.
+      Type 'DmUpdateManyMutationInput' is not assignable to type 'CostumeUpdateManyMutationInput'.
+        Types of property 'status' are incompatible.
+          Type 'DmStatus | EnumDmStatusFieldUpdateOperationsInput | undefined' is not assignable to type 'CostumeStatus | EnumCostumeStatusFieldUpdateOperationsInput | undefined'.
+            Type 'EnumDmStatusFieldUpdateOperationsInput' is not assignable to type 'CostumeStatus | EnumCostumeStatusFieldUpdateOperationsInput | undefined'.
+              Type 'EnumDmStatusFieldUpdateOperationsInput' is not assignable to type 'EnumCostumeStatusFieldUpdateOperationsInput'.
+                Types of property 'set' are incompatible.
+                  Type 'DmStatus | undefined' is not assignable to type 'CostumeStatus | undefined'.
+                    Type '"active"' is not assignable to type 'CostumeStatus | undefined'.
+src/server/catalog/commands.ts(385,36): error TS2322: Type 'string | StringFieldUpdateOperationsInput' is not assignable to type 'string'.
+  Type 'StringFieldUpdateOperationsInput' is not assignable to type 'string'.
+src/server/catalog/commands.ts(454,66): error TS2694: Namespace '"D:/Project/Murder_Mystery_Game/node_modules/.prisma/client/index".Prisma' has no exported member 'DmStatus'.
+src/server/catalog/commands.ts(461,9): error TS2322: Type 'ScriptUpdateManyMutationInput | CostumeUpdateManyMutationInput | DmUpdateManyMutationInput' is not assignable to type '(Without<DmUpdateManyMutationInput, DmUncheckedUpdateManyInput> & DmUncheckedUpdateManyInput) | (Without<...> & DmUpdateManyMutationInput)'.
+  Type 'ScriptUpdateManyMutationInput' is not assignable to type '(Without<DmUpdateManyMutationInput, DmUncheckedUpdateManyInput> & DmUncheckedUpdateManyInput) | (Without<...> & DmUpdateManyMutationInput)'.
+    Type 'ScriptUpdateManyMutationInput' is not assignable to type 'Without<DmUncheckedUpdateManyInput, DmUpdateManyMutationInput> & DmUpdateManyMutationInput'.
+      Type 'ScriptUpdateManyMutationInput' is not assignable to type 'DmUpdateManyMutationInput'.
+        Types of property 'status' are incompatible.
+          Type 'ScriptStatus | EnumScriptStatusFieldUpdateOperationsInput | undefined' is not assignable to type 'DmStatus | EnumDmStatusFieldUpdateOperationsInput | undefined'.
+            Type 'EnumScriptStatusFieldUpdateOperationsInput' is not assignable to type 'DmStatus | EnumDmStatusFieldUpdateOperationsInput | undefined'.
+              Type 'EnumScriptStatusFieldUpdateOperationsInput' is not assignable to type 'EnumDmStatusFieldUpdateOperationsInput'.
+                Types of property 'set' are incompatible.
+                  Type 'ScriptStatus | undefined' is not assignable to type 'DmStatus | undefined'.
+                    Type '"draft"' is not assignable to type 'DmStatus | undefined'.
+src/server/catalog/validation.ts(2,37): error TS2459: Module '"@/lib/api/contracts"' declares 'ScriptSort' locally, but it is not exported.

@@ -1,16 +1,17 @@
 "use client";
+import { NotificationBell } from "@/features/notifications/notification-bell";
 
-import { Badge, Button, useToast } from "@/components/ui";
+import { useRemote } from "@/features/booking/api-state";
+import type { MeDto } from "@/lib/api/contracts";
+import { Badge, Button } from "@/components/ui";
 import Link from "next/link";
 import type { LedgerEntry, LedgerKind, MemberReview } from "./data";
 
 export function MemberHeaderActions({
-  notifications = false,
+  notifications = true,
 }: {
   notifications?: boolean;
 }) {
-  const toast = useToast();
-
   return (
     <>
       <Link
@@ -33,27 +34,7 @@ export function MemberHeaderActions({
           <path d="M5.5 10v9h13v-9M9.5 19v-5h5v5" />
         </svg>
       </Link>
-      {notifications ? (
-        <button
-          className="nav-icon"
-          type="button"
-          aria-label="查看通知"
-          onClick={() => toast("当前没有新的通知")}
-        >
-          <span className="dot" />
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.7"
-            aria-hidden="true"
-          >
-            <path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" />
-          </svg>
-        </button>
-      ) : null}
+      {notifications ? <NotificationBell /> : null}
       <Button variant="primary" href="/booking/new" data-od-id="booking-link">
         发起预约
       </Button>
@@ -230,3 +211,9 @@ export const ledgerFilters: { value: "all" | LedgerKind; label: string }[] = [
   { value: "deposit", label: "押金" },
   { value: "gift", label: "兑换" },
 ];
+
+export function AccountRoleBadge() {
+  const account = useRemote<MeDto>("/api/me");
+  const labels = { customer: "顾客", dm: "DM", manager: "店长", boss: "BOSS" };
+  return <span className="tag">{account.data ? labels[account.data.role] : account.error ? "身份不可用" : "身份加载中"}</span>;
+}

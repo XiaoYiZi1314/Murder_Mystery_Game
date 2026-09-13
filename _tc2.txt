@@ -1,0 +1,5 @@
+﻿
+> shisanwu-murder-mystery-game@0.1.0 typecheck
+> tsc --noEmit
+
+src/server/catalog/commands.ts(335,77): error TS1361: 'PrismaNs' cannot be used as a value because it was imported using 'import type'.

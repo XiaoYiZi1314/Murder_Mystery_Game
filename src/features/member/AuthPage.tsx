@@ -9,7 +9,7 @@ import type { MeDto } from "@/lib/api/contracts";
 
 export type AuthTab = "login" | "register";
 
-export function AuthPage({ initialTab = "login" }: { initialTab?: AuthTab }) {
+export function AuthPage({ initialTab = "login", returnTo="/me" }: { initialTab?: AuthTab; returnTo?:string }) {
   const [tab, setTab] = useState<AuthTab>(initialTab);
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -51,7 +51,7 @@ export function AuthPage({ initialTab = "login" }: { initialTab?: AuthTab }) {
         });
         toast(`注册成功，欢迎 ${me.nickname}`);
       }
-      router.push("/me");
+      router.push(returnTo);
       router.refresh();
     } catch (error: unknown) {
       const typed = error as ApiClientError;

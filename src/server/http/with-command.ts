@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import type { NextRequest } from "next/server";
 import type { NextResponse } from "next/server";
 import type { DbTx } from "../db/prisma";
@@ -118,6 +119,7 @@ export async function withCommand(
     const result = await work({ actor, session, token, body, ip, tx: null, idempotencyKey });
     return toResponse({ status: result.status ?? 200, message: result.message ?? "OK", data: result.data ?? null, headers: result.headers });
   } catch (error: unknown) {
+    if(error instanceof Prisma.PrismaClientKnownRequestError && ["P2002","P2003","P2034"].includes(error.code))return fail(3001,"资源冲突或并发更新，请重新加载后重试",409);
     if (error instanceof ApiError) {
       return fail(error.code, error.message, error.status, error.fieldErrors);
     }

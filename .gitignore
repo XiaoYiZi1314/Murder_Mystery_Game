@@ -45,3 +45,7 @@ pnpm-debug.log*
 /temp
 /设计网站落地页
 /.pi
+
+# Local media and private migration backups
+/var/
+/backups/

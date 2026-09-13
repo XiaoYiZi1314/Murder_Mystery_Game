@@ -1,291 +1,57 @@
-/* Original local logo markup preserves the supplied intrinsic sizing and CSS. */
-/* eslint-disable @next/next/no-img-element */
+/* eslint-disable @next/next/no-img-element -- approved local brand and reencoded media */
 "use client";
-
 import Link from "next/link";
-import { useEffect, useRef, useState, type FormEvent } from "react";
-import {
-  Badge,
-  Button,
-  Dialog,
-  Input,
-  Select,
-  Textarea,
-  useToast,
-} from "@/components/ui";
+import { useEffect, useRef, useState } from "react";
+import { Badge, Button, Dialog, useToast } from "@/components/ui";
 import { Screen, SiteFooter, SiteHeader } from "@/components/layout";
-import {
-  validateBookingRequest,
-  type BookingRequestValues,
-} from "@/features/booking/validation";
-
+import type { ScriptSummaryDto, DmPublicDto } from "@/lib/api/contracts";
+import { SessionCard } from "@/features/booking/session-card";
+import type { SessionDto } from "@/lib/api/contracts";
 type HomeVariant = "home" | "landing";
-type CalendarFilter = "all" | "sat" | "sun" | "mon";
-
-const scripts = [
-  {
-    name: "雾港来信",
-    cover: "cover-a",
-    kind: "情感 · 还原",
-    players: "6人",
-    rating: "4.9",
-    description: "一封迟到十年的信，把六个人重新带回那场未完的告别。",
-    tags: ["情感", "本格", "4.5小时"],
-    price: "268",
-  },
-  {
-    name: "长夜行",
-    cover: "cover-b",
-    kind: "机制 · 阵营",
-    players: "7人",
-    rating: "4.8",
-    description: "城门关闭前，七位行者必须在真相和信任之间做出选择。",
-    tags: ["机制", "阵营", "5小时"],
-    price: "298",
-  },
-  {
-    name: "金陵旧梦",
-    cover: "cover-c",
-    kind: "古风 · 情感",
-    players: "6人",
-    rating: "4.7",
-    description: "繁华落幕后，一场旧梦在六个人的记忆里各自生长。",
-    tags: ["古风", "情感", "4小时"],
-    price: "238",
-  },
-] as const;
-
-const sessions = [
-  {
-    key: "sat",
-    od: "session-雾港来信-0614",
-    date: "06.14",
-    weekday: "周六",
-    time: "13:30",
-    script: "雾港来信",
-    dm: "林深",
-    capacity: 6,
-    joined: 4,
-    price: 268,
-    progress: "67%",
-  },
-  {
-    key: "sun",
-    od: "session-长夜行-0615",
-    date: "06.15",
-    weekday: "周日",
-    time: "18:00",
-    script: "长夜行",
-    dm: "阿渡",
-    capacity: 7,
-    joined: 3,
-    price: 298,
-    progress: "43%",
-  },
-  {
-    key: "mon",
-    od: "session-金陵旧梦-0616",
-    date: "06.16",
-    weekday: "周一",
-    time: "19:00",
-    script: "金陵旧梦",
-    dm: "十三",
-    capacity: 6,
-    joined: 3,
-    price: 238,
-    progress: "50%",
-  },
-] as const;
-
 type BookingSeed = { script?: string; session?: string };
-
+export interface HomeContent {
+  sessions?: SessionDto[];
+  scripts: ScriptSummaryDto[];
+  dms: DmPublicDto[];
+  wechat_qrcode: string | null;
+}
 function HomeBookingDialog({
   open,
-  seed,
   onClose,
+  qr,
 }: {
   open: boolean;
-  seed: BookingSeed;
   onClose: () => void;
+  qr: string | null;
 }) {
-  const [success, setSuccess] = useState(false);
-  const [errors, setErrors] = useState<
-    Partial<Record<keyof BookingRequestValues, string>>
-  >({});
-
-  function close() {
-    setSuccess(false);
-    setErrors({});
-    onClose();
-  }
-
-  function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    const values: BookingRequestValues = {
-      script: String(data.get("script") ?? ""),
-      time: String(data.get("time") ?? ""),
-      players: String(data.get("players") ?? ""),
-      name: String(data.get("name") ?? ""),
-      contact: String(data.get("contact") ?? ""),
-    };
-    const nextErrors = validateBookingRequest(values);
-    setErrors(nextErrors);
-    if (Object.keys(nextErrors).length === 0) setSuccess(true);
-  }
-
-  const description = seed.session
-    ? `已选择场次：${seed.session}。提交后我们会与你确认押金信息。`
-    : "留下你的想法，我们来帮你把这一桌拼起来。";
-
   return (
     <Dialog
-      open={open}
-      onClose={close}
-      title={<span data-od-id="booking-heading">发起预约</span>}
-      description={description}
-      id="booking-modal"
       variant="home"
+      open={open}
+      onClose={onClose}
+      title="联系门店确认预约"
     >
-      {!success ? (
-        <form
-          className="modal-form"
-          id="booking-form"
-          onSubmit={submit}
-          noValidate
-        >
-          <div className="field">
-            <label htmlFor="script-select">想玩哪个剧本</label>
-            <Select
-              id="script-select"
-              name="script"
-              defaultValue={seed.script ?? ""}
-              required
-              aria-invalid={Boolean(errors.script)}
-            >
-              <option value="">请选择剧本</option>
-              <option>雾港来信</option>
-              <option>长夜行</option>
-              <option>金陵旧梦</option>
-            </Select>
-            {errors.script && (
-              <p className="field-error" role="alert">
-                {errors.script}
-              </p>
-            )}
-          </div>
-          <div className="field">
-            <label htmlFor="time-select">期望时间</label>
-            <Input
-              id="time-select"
-              name="time"
-              type="datetime-local"
-              required
-              aria-invalid={Boolean(errors.time)}
-            />
-            <p className="field-help">也可以直接加入拼车大厅中的开放场次。</p>
-            {errors.time && (
-              <p className="field-error" role="alert">
-                {errors.time}
-              </p>
-            )}
-          </div>
-          <div className="field">
-            <label htmlFor="player-count">预计人数</label>
-            <Input
-              id="player-count"
-              name="players"
-              type="number"
-              min="1"
-              max="12"
-              placeholder="例如：4"
-              required
-              aria-invalid={Boolean(errors.players)}
-            />
-            {errors.players && (
-              <p className="field-error" role="alert">
-                {errors.players}
-              </p>
-            )}
-          </div>
-          <div className="field">
-            <label htmlFor="contact-name">联系人</label>
-            <Input
-              id="contact-name"
-              name="name"
-              type="text"
-              placeholder="怎么称呼你"
-              required
-              aria-invalid={Boolean(errors.name)}
-            />
-            {errors.name && (
-              <p className="field-error" role="alert">
-                {errors.name}
-              </p>
-            )}
-          </div>
-          <div className="field">
-            <label htmlFor="contact-phone">微信 / 手机号</label>
-            <Input
-              id="contact-phone"
-              name="contact"
-              type="tel"
-              inputMode="tel"
-              placeholder="方便我们联系你"
-              required
-              aria-invalid={Boolean(errors.contact)}
-            />
-            {errors.contact && (
-              <p className="field-error" role="alert">
-                {errors.contact}
-              </p>
-            )}
-          </div>
-          <div className="field">
-            <label htmlFor="booking-note">备注（选填）</label>
-            <Textarea
-              id="booking-note"
-              name="note"
-              placeholder="例如：希望周末晚上、第一次玩剧本杀"
-            />
-          </div>
-          <div className="form-actions">
-            <Button variant="secondary" onClick={close}>
-              取消
-            </Button>
-            <Button type="submit" data-od-id="booking-submit">
-              提交预约
-            </Button>
-          </div>
-        </form>
+      <p>选择已有场次直接报名，或提交自主预约；审核通过后自动为团队占坑。</p>
+      <div className="c3-actions">
+        <Button href="/sessions">查看开放场次</Button>
+        <Button href="/booking/new">提交自主预约</Button>
+      </div>
+      {qr ? (
+        <img
+          src={qr}
+          width={240}
+          height={240}
+          style={{ objectFit: "contain" }}
+          alt="商家微信二维码"
+        />
       ) : (
-        <div className="success-state is-visible" id="booking-success">
-          <svg
-            width="48"
-            height="48"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            aria-hidden="true"
-          >
-            <circle cx="12" cy="12" r="9" />
-            <path d="m8 12 2.5 2.5L16 9" />
-          </svg>
-          <h3>预约信息已记录（前端演示）</h3>
-          <p>当前未连接店内后台，不会生成真实订单。</p>
-          <Button onClick={close}>知道了</Button>
-        </div>
+        <p>商家二维码暂未配置，请通过门店现有联系方式咨询。</p>
       )}
+      <Button onClick={onClose}>关闭</Button>
     </Dialog>
   );
 }
-
-function ScriptSection({
-  openBooking,
-}: {
-  openBooking: (seed?: BookingSeed) => void;
-}) {
+function ScriptSection({ scripts }: { scripts: ScriptSummaryDto[] }) {
   return (
     <section
       className="section light-section"
@@ -296,300 +62,123 @@ function ScriptSection({
         <div className="section-heading">
           <div>
             <p className="eyebrow">精选剧本</p>
-            <h2 data-od-id="scripts-heading">故事先替你留好位置。</h2>
-            <p>每一本都标注了时长、人数和风格。先从你今天想成为谁开始。</p>
+            <h2>故事先替你留好位置。</h2>
+            <p>每一本都标注了时长、人数和风格。</p>
           </div>
-          <Link
-            className="text-link"
-            href="/sessions"
-            data-od-id="scripts-view-all"
-          >
-            查看可报名场次 →
+          <Link className="text-link" href="/scripts">
+            查看全部剧本 →
           </Link>
         </div>
         <div className="grid-3">
-          {scripts.map((script) => (
-            <article
-              className="script-card"
-              key={script.name}
-              data-od-id={`script-card-${script.name}`}
-            >
-              <div
-                className={`script-cover ${script.cover}`}
-                aria-label={`${script.name}剧本封面`}
-              >
-                <div className="cover-art">
-                  <span>{script.name}</span>
-                </div>
+          {scripts.map((s) => (
+            <article className="script-card" key={s.id}>
+              <div className="script-cover">
+                <img
+                  src={s.thumbnail ?? s.cover}
+                  alt={s.title}
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
                 <div className="cover-meta">
-                  <span>{script.kind}</span>
-                  <span>{script.players}</span>
+                  <span>{s.tags.join(" · ")}</span>
+                  <span>
+                    {s.player_min}–{s.player_max} 人
+                  </span>
                 </div>
               </div>
               <div className="script-body">
                 <div className="script-title">
-                  <h3>{script.name}</h3>
+                  <h3>{s.title}</h3>
                   <span className="rating">
-                    <strong>{script.rating}</strong> / 5
+                    {s.review_count ? s.avg_rating : "暂无评价"}
                   </span>
                 </div>
-                <p className="script-desc">{script.description}</p>
+                <p className="script-desc">
+                  {s.tagline ?? "详细介绍登录后查看"}
+                </p>
                 <div className="tag-row">
-                  {script.tags.map((tag) => (
-                    <Badge key={tag}>{tag}</Badge>
+                  {s.tags.map((t) => (
+                    <Badge key={t}>{t}</Badge>
                   ))}
                 </div>
                 <div className="script-bottom">
                   <span className="price">
-                    人均 <strong>¥{script.price}</strong>
+                    人均 <strong>¥{s.price}</strong>
                   </span>
-                  <Button
-                    variant="secondary"
-                    className="btn-arrow"
-                    onClick={() => openBooking({ script: script.name })}
-                    data-script={script.name}
-                    data-open-booking=""
-                    data-od-id={`script-book-${script.name}`}
-                  >
-                    预约
+                  <Button variant="secondary" href={`/scripts/${s.slug}`}>
+                    查看详情
                   </Button>
                 </div>
               </div>
             </article>
           ))}
         </div>
+        {!scripts.length && (
+          <p role="status">暂无精选剧本，门店发布后将在这里展示。</p>
+        )}
       </div>
     </section>
   );
 }
-
-function SessionSection({
-  variant,
-  openBooking,
-}: {
-  variant: HomeVariant;
-  openBooking: (seed?: BookingSeed) => void;
-}) {
-  const [filter, setFilter] = useState<CalendarFilter>("all");
-  const content = (
-    <>
-      <div
-        className="session-calendar"
-        role="group"
-        aria-label="选择日期"
-        data-od-id="session-calendar"
-      >
-        {(
-          [
-            {
-              key: "all",
-              strong: "全部",
-              text: "3 场开放",
-              od: "calendar-all",
-            },
-            {
-              key: "sat",
-              strong: "06.14",
-              text: "周六 · 1 场",
-              od: "calendar-sat",
-            },
-            {
-              key: "sun",
-              strong: "06.15",
-              text: "周日 · 1 场",
-              od: "calendar-sun",
-            },
-            {
-              key: "mon",
-              strong: "06.16",
-              text: "周一 · 1 场",
-              od: "calendar-mon",
-            },
-          ] as const
-        ).map((item) => (
-          <button
-            type="button"
-            key={item.key}
-            className={filter === item.key ? "is-active" : undefined}
-            data-calendar-filter={item.key}
-            aria-pressed={filter === item.key}
-            data-od-id={item.od}
-            onClick={() => setFilter(item.key)}
-          >
-            <strong>{item.strong}</strong>
-            <span>{item.text}</span>
-          </button>
-        ))}
-      </div>
-      <div className="session-list" aria-label="开放报名场次列表">
-        {sessions
-          .filter((session) => filter === "all" || session.key === filter)
-          .map((session) => (
-            <article
-              className="session-row"
-              data-calendar-date={session.key}
-              data-od-id={session.od}
-              key={session.key}
-            >
-              <div className="session-date">
-                <strong>{session.date}</strong>
-                {session.weekday} · {session.time}
-              </div>
-              <div className="session-main">
-                <h3>{session.script}</h3>
-                <p>
-                  主 DM：{session.dm} · {session.capacity}人本 · ¥
-                  {session.price} / 人
-                </p>
-                <div className="session-progress">
-                  <span style={{ width: session.progress }} />
-                </div>
-              </div>
-              <div className="session-availability">
-                <span className="availability">
-                  已报 <strong>{session.joined}</strong> / {session.capacity} ·
-                  还差 {session.capacity - session.joined} 人
-                </span>
-                <Button
-                  variant="secondary"
-                  onClick={() =>
-                    openBooking({
-                      script: session.script,
-                      session: `${session.date.replace(".", "月")}日 ${session.weekday} ${session.time}`,
-                    })
-                  }
-                  data-script={session.script}
-                  data-session={`${session.date} ${session.weekday} ${session.time}`}
-                  data-open-booking=""
-                  data-od-id={`session-book-${session.script}-${session.date.replace(".", "")}`}
-                >
-                  加入
-                </Button>
-              </div>
-            </article>
+function SessionSection({ sessions }: { sessions: SessionDto[] }) {
+  return (
+    <section className="section" id="sessions">
+      <div className="container">
+        <p className="eyebrow">近期场次</p>
+        <h2>下一场故事，一起入座。</h2>
+        <div className="c3-grid">
+          {sessions.map((s) => (
+            <SessionCard key={s.id} session={s} />
           ))}
-      </div>
-    </>
-  );
-  return (
-    <section
-      className="section session-section"
-      id="sessions"
-      data-od-id="sessions"
-    >
-      <div className="container session-layout">
-        <div className="session-intro">
-          <p className="eyebrow">拼车大厅</p>
-          <h2 data-od-id="sessions-heading">还有几席，等你入戏。</h2>
-          <p>
-            一个人也能来。选一场还差几人的开放场次，和同样想玩这个故事的人坐到一起。
-          </p>
-          <div className="session-note">
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.7"
-              aria-hidden="true"
-            >
-              <circle cx="12" cy="12" r="9" />
-              <path d="M12 7v5l3 2" />
-            </svg>
-            <span>报名后，店家会通过微信与你确认押金和锁车信息。</span>
-          </div>
         </div>
-        {variant === "home" ? <div>{content}</div> : content}
+        {!sessions.length && <p>暂无开放场次，门店发布后将在这里显示。</p>}
       </div>
     </section>
   );
 }
 
-function DmSection() {
-  const dms = [
-    {
-      key: "linshen",
-      avatar: "林",
-      name: "林深",
-      role: "情感还原 · 雾港来信",
-      copy: "擅长把线索交到情绪刚好的位置，让每一次沉默都有回应。",
-      tags: ["情感", "新手友好"],
-      count: 3,
-    },
-    {
-      key: "adu",
-      avatar: "渡",
-      name: "阿渡",
-      role: "机制推进 · 阵营本",
-      copy: "节奏清楚、反馈及时，适合喜欢做选择，也喜欢被故事推着走的人。",
-      tags: ["机制", "阵营"],
-      count: 4,
-    },
-    {
-      key: "shisan",
-      avatar: "十",
-      name: "十三",
-      role: "古风沉浸 · 角色状态",
-      copy: "从妆造到入场词都提前准备，让古风故事从推门之前就开始。",
-      tags: ["古风", "沉浸"],
-      count: 2,
-    },
-  ];
+function DmSection({ dms }: { dms: DmPublicDto[] }) {
   return (
-    <section className="section dm-section" id="dms" data-od-id="dms">
+    <section className="section dm-section" id="dms">
       <div className="container">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">DM 速览</p>
-            <h2 data-od-id="dms-heading">找到适合这本故事的带本人。</h2>
-            <p>先看他们擅长的节奏与题材，再决定把哪一晚交给谁。</p>
+            <p className="eyebrow">认识 DM</p>
+            <h2>找到适合这本故事的带本人。</h2>
           </div>
-          <Link className="text-link" href="/dms" data-od-id="dms-view-all">
+          <Link className="text-link" href="/dms">
             查看全部 DM →
           </Link>
         </div>
         <div className="dm-grid">
-          {dms.map((dm) => (
-            <article
-              className="dm-card"
-              data-od-id={`dm-card-${dm.key}`}
-              key={dm.key}
-            >
+          {dms.map((d) => (
+            <article className="dm-card" key={d.id}>
               <div className="dm-card-head">
-                <div className="dm-avatar" aria-hidden="true">
-                  {dm.avatar}
+                <div className="dm-avatar">
+                  {d.avatar ? (
+                    <img src={d.avatar} alt={d.name} width={64} height={64} />
+                  ) : (
+                    d.name.slice(0, 1)
+                  )}
                 </div>
-                <div>
-                  <h3>{dm.name}</h3>
-                  <div className="dm-role">{dm.role}</div>
-                </div>
+                <h3>{d.name}</h3>
               </div>
-              <p>{dm.copy}</p>
+              <p>{d.bio ?? "个人介绍待补充"}</p>
               <div className="tag-row">
-                {dm.tags.map((tag) => (
-                  <Badge key={tag}>{tag}</Badge>
+                {d.specialty_tags.map((t) => (
+                  <Badge key={t}>{t}</Badge>
                 ))}
               </div>
               <div className="dm-card-foot">
-                <span className="meta">可带剧本 · {dm.count} 本</span>
-                <Button
-                  variant="ghost"
-                  className="btn-arrow"
-                  href="/dms"
-                  data-od-id={`dm-link-${dm.key}`}
-                >
-                  查看主页
-                </Button>
+                <Link href={`/dms/${d.slug ?? d.id}`}>查看主页 →</Link>
               </div>
             </article>
           ))}
         </div>
+        {!dms.length && <p>暂无已发布的 DM 资料。</p>}
       </div>
     </section>
   );
 }
-
 function ExperienceSection() {
   return (
     <section
@@ -620,7 +209,7 @@ function ExperienceSection() {
             <span className="experience-index">02</span>
             <div>
               <h3>和同频的人拼成一桌</h3>
-              <p>开放场次持续更新，散客也可以轻松报名。</p>
+              <p>查看门店发布的真实开放场次，为你的团队报名。</p>
             </div>
           </div>
           <div className="experience-item" data-od-id="experience-step-03">
@@ -636,7 +225,13 @@ function ExperienceSection() {
   );
 }
 
-export function HomePage({ variant }: { variant: HomeVariant }) {
+export function HomePage({
+  variant,
+  data = { scripts: [], dms: [], wechat_qrcode: null },
+}: {
+  variant: HomeVariant;
+  data?: HomeContent;
+}) {
   const toast = useToast();
   const [booking, setBooking] = useState<BookingSeed | null>(null);
   const [installOpen, setInstallOpen] = useState(false);
@@ -712,7 +307,7 @@ export function HomePage({ variant }: { variant: HomeVariant }) {
                   data-open-booking=""
                   data-od-id="hero-primary-cta"
                 >
-                  发起一场预约
+                  联系门店预约
                 </Button>
                 <Button
                   variant="secondary"
@@ -737,9 +332,9 @@ export function HomePage({ variant }: { variant: HomeVariant }) {
             </div>
           </div>
         </section>
-        <ScriptSection openBooking={openBooking} />
-        <SessionSection variant={variant} openBooking={openBooking} />
-        <DmSection />
+        <ScriptSection scripts={data.scripts} />
+        <SessionSection sessions={data.sessions ?? []} />
+        <DmSection dms={data.dms} />
         <ExperienceSection />
         <section
           className="section cta-section"
@@ -757,7 +352,7 @@ export function HomePage({ variant }: { variant: HomeVariant }) {
               data-open-booking=""
               data-od-id="cta-booking"
             >
-              发起一场预约
+              联系门店预约
             </Button>
           </div>
         </section>
@@ -791,7 +386,7 @@ export function HomePage({ variant }: { variant: HomeVariant }) {
       </SiteFooter>
       <HomeBookingDialog
         open={booking !== null}
-        seed={booking ?? {}}
+        qr={data.wechat_qrcode}
         onClose={() => setBooking(null)}
       />
       <Dialog

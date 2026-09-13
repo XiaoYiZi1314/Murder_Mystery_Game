@@ -14,6 +14,10 @@ import {
   Textarea,
   useToast,
 } from "@/components/ui";
+import { ContentCard } from "@/features/catalog/catalog-cards";
+import { NotificationBell } from "@/features/notifications/notification-bell";
+import { SessionCard } from "@/features/booking/session-card";
+import { MediaField } from "@/features/admin/content/media-field";
 import { validatePreviewEmail } from "./validation";
 
 const colors = [
@@ -463,6 +467,62 @@ export function DesignSystemPreview() {
           </div>
         </section>
 
+        <section className="section" aria-labelledby="content-media-preview">
+          <div className="container">
+            <h2 id="content-media-preview">内容与媒体组件</h2>
+            <p>以下复用实际卡片和上传控件；上传仍受真实会话权限约束。</p>
+            <div className="grid-3">
+              <ContentCard
+                item={{
+                  id: "preview",
+                  href: "/scripts",
+                  title: "内容空态预览",
+                  image: null,
+                  summary: "门店尚未上传图片时的明确占位。",
+                  tags: [],
+                  rating: null,
+                }}
+              />
+            </div>
+            <MediaField purpose="script_cover" />
+          </div>
+        </section>
+        <section className="section">
+          <div className="container">
+            <h2>C3 场次与通知组件</h2>
+            <p>
+              以下为开发预览数据，不进入业务列表；小铃铛读取当前账号真实通知。
+            </p>
+            <NotificationBell />
+            <SessionCard
+              session={{
+                id: "preview",
+                script_id: "preview",
+                script: {
+                  id: "preview",
+                  title: "场次空态预览",
+                  slug: "preview",
+                  cover: "",
+                },
+                primary_dm_id: null,
+                primary_dm_name: null,
+                backup_dm_ids: [],
+                start_time: "2030-01-01T06:00:00Z",
+                player_min: 4,
+                player_max: 6,
+                booked_count: 0,
+                remaining_count: 6,
+                needed_count: 4,
+                price: "0.00",
+                status: "draft",
+                source: "preview",
+                remark: null,
+                updated_at: "2030-01-01T00:00:00Z",
+              }}
+              onJoin={() => undefined}
+            />
+          </div>
+        </section>
         <section className="section" aria-labelledby="layout-title">
           <div className="container">
             <SectionHead

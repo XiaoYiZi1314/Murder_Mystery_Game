@@ -1,0 +1,21 @@
+﻿node.exe : Environment variables loaded from .env
+所在位置 行:1 字符: 1
++ & "D:\Programming_language\Node.js/node.exe" "D:\Programming_language ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Environment variables loaded from .env:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Prisma schema loaded from prisma\schema.prisma
+Datasource "db": MySQL database "shisanwu_dev" at "127.0.0.1:3306"
+
+
+⚠️  Warnings for the current datasource:
+
+  • The values [published,archived] on the enum `Script_status` will be removed. If these variants are still used in the database, this will fail.
+
+Error: Prisma Migrate has detected that the environment is non-interactive, which is not supported.
+
+`prisma migrate dev` is an interactive command designed to create new migrations and evolve the database in development
+.
+To apply existing migrations in deployments, use prisma migrate deploy.
+See https://www.prisma.io/docs/reference/api-reference/command-reference#migrate-deploy

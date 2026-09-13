@@ -1,0 +1,118 @@
+﻿✖ 匿名列表 200 且无草稿；匿名详情 401 (136.2579ms)
+✖ 顾客登录后可读详情；顾客看草稿详情 404；员工可读草稿 (2.2017ms)
+✖ 角色排序与剧本↔妆造/DM 双向关联 (0.1075ms)
+✖ 无效人数区间/缺失必填/非法价格 422（字段级定位） (0.0481ms)
+✖ 顾客/DM 不得写内容（CSRF 合法时 403），匿名 401 (0.053ms)
+✖ 重复关联不重复记录（tag_ids/costume_ids/dm_ids 去重） (0.0314ms)
+✖ 标签管理：唯一 409；被引用删除 409；解除后删除成功 (0.0326ms)
+✖ 引用删除 409：被剧本引用的妆造不可物理删除；允许下架 (0.031ms)
+✖ 排序/分页/搜索：价格双排序、latest、rating 无评价不伪造 (0.0498ms)
+✖ DM 自改展示字段成功；改他人 403；manager 可改任意 (0.0562ms)
+✖ 员工内容写含同事务审计与 catalog.changed outbox (0.032ms)
+✖ 条件更新：陈旧 updated_at 409，不覆盖他人修改 (0.0642ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 0
+ℹ fail 12
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 329.728
+
+✖ failing tests:
+
+test at tests\integration\content.test.ts:2:8983
+✖ 匿名列表 200 且无草稿；匿名详情 401 (136.2579ms)
+  Error: 会话未就绪：before() 应先初始化
+      at notReady (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:82:45)
+      at TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:162:20)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestHook.run (node:internal/test_runner/test:1389:7)
+
+test at tests\integration\content.test.ts:2:9989
+✖ 顾客登录后可读详情；顾客看草稿详情 404；员工可读草稿 (2.2017ms)
+  Error: 会话未就绪：before() 应先初始化
+      at notReady (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:82:45)
+      at TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:162:20)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestHook.run (node:internal/test_runner/test:1389:7)
+
+test at tests\integration\content.test.ts:2:11283
+✖ 角色排序与剧本↔妆造/DM 双向关联 (0.1075ms)
+  Error: 会话未就绪：before() 应先初始化
+      at notReady (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:82:45)
+      at TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:162:20)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestHook.run (node:internal/test_runner/test:1389:7)
+
+test at tests\integration\content.test.ts:2:13843
+✖ 无效人数区间/缺失必填/非法价格 422（字段级定位） (0.0481ms)
+  Error: 会话未就绪：before() 应先初始化
+      at notReady (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:82:45)
+      at TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:162:20)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestHook.run (node:internal/test_runner/test:1389:7)
+
+test at tests\integration\content.test.ts:2:15088
+✖ 顾客/DM 不得写内容（CSRF 合法时 403），匿名 401 (0.053ms)
+  Error: 会话未就绪：before() 应先初始化
+      at notReady (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:82:45)
+      at TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:162:20)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestHook.run (node:internal/test_runner/test:1389:7)
+
+test at tests\integration\content.test.ts:2:15939
+✖ 重复关联不重复记录（tag_ids/costume_ids/dm_ids 去重） (0.0314ms)
+  Error: 会话未就绪：before() 应先初始化
+      at notReady (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:82:45)
+      at TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:162:20)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestHook.run (node:internal/test_runner/test:1389:7)
+
+test at tests\integration\content.test.ts:2:16855
+✖ 标签管理：唯一 409；被引用删除 409；解除后删除成功 (0.0326ms)
+  Error: 会话未就绪：before() 应先初始化
+      at notReady (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:82:45)
+      at TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:162:20)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestHook.run (node:internal/test_runner/test:1389:7)
+
+test at tests\integration\content.test.ts:2:18008
+✖ 引用删除 409：被剧本引用的妆造不可物理删除；允许下架 (0.031ms)
+  Error: 会话未就绪：before() 应先初始化
+      at notReady (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:82:45)
+      at TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:162:20)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestHook.run (node:internal/test_runner/test:1389:7)
+
+test at tests\integration\content.test.ts:2:19152
+✖ 排序/分页/搜索：价格双排序、latest、rating 无评价不伪造 (0.0498ms)
+  Error: 会话未就绪：before() 应先初始化
+      at notReady (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:82:45)
+      at TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:162:20)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestHook.run (node:internal/test_runner/test:1389:7)
+
+test at tests\integration\content.test.ts:2:22060
+✖ DM 自改展示字段成功；改他人 403；manager 可改任意 (0.0562ms)
+  Error: 会话未就绪：before() 应先初始化
+      at notReady (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:82:45)
+      at TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:162:20)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestHook.run (node:internal/test_runner/test:1389:7)
+
+test at tests\integration\content.test.ts:2:23224
+✖ 员工内容写含同事务审计与 catalog.changed outbox (0.032ms)
+  Error: 会话未就绪：before() 应先初始化
+      at notReady (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:82:45)
+      at TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:162:20)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestHook.run (node:internal/test_runner/test:1389:7)
+
+test at tests\integration\content.test.ts:2:24813
+✖ 条件更新：陈旧 updated_at 409，不覆盖他人修改 (0.0642ms)
+  Error: 会话未就绪：before() 应先初始化
+      at notReady (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:82:45)
+      at TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:162:20)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestHook.run (node:internal/test_runner/test:1389:7)

@@ -1,0 +1,112 @@
+.c3-stack {
+  display: grid;
+  gap: var(--space-4);
+}
+.c3-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+.c3-card {
+  padding: var(--space-6);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  background: var(--bg);
+}
+.c3-card h3 {
+  margin-top: 0;
+}
+.c3-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+.c3-error {
+  color: var(--danger);
+  overflow-wrap: anywhere;
+}
+.c3-filter {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  flex-wrap: wrap;
+}
+.c3-filter .input,
+.c3-filter .select {
+  width: auto;
+  max-width: 100%;
+}
+.c3-form {
+  display: grid;
+  gap: var(--space-4);
+  max-width: 760px;
+}
+.c3-form fieldset {
+  border: 0;
+  padding: 0;
+  min-width: 0;
+}
+.c3-progress {
+  height: var(--space-2);
+  background: var(--surface);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+.c3-progress span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+.c3-notifications {
+  max-height: 60vh;
+  overflow: auto;
+  display: grid;
+  gap: var(--space-3);
+}
+.c3-notifications article {
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--border-soft);
+}
+.c3-notifications .unread {
+  border-left: 3px solid var(--accent);
+}
+.c3-pagination {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+@media (max-width: 700px) {
+  .c3-grid {
+    grid-template-columns: 1fr;
+  }
+  .c3-card {
+    padding: var(--space-4);
+  }
+  .c3-filter > * {
+    flex: 1;
+    min-width: 130px;
+  }
+  .c3-form {
+    width: 100%;
+  }
+}
+
+/* The reference mock hid middle columns on mobile. Real capacity and price
+   remain essential before joining, so the live row stacks them instead. */
+@media (max-width: 920px) {
+  [data-screen="sessions"] .session-card.data-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  [data-screen="sessions"] .session-card.data-row > div:nth-child(2),
+  [data-screen="sessions"] .session-card.data-row > div:nth-child(3) {
+    display: block;
+    grid-column: 1;
+  }
+  [data-screen="sessions"] .session-card.data-row > div:last-child {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+  }
+}

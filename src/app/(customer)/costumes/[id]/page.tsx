@@ -1,16 +1,11 @@
-import { notFound } from "next/navigation";
+import { notFound } from 'next/navigation';
+import { getCostumeDetail } from '@/server/catalog/queries';
+import { LiveCostumeDetail } from '@/features/catalog/live-catalog';
+import { ApiError } from '@/server/http/errors';
 
-import { CostumeDetailScreen, isCostumeId } from "@/features/catalog";
-
-export const metadata = { title: "妆造详情 · 十三雾" };
-
-export default async function CostumeDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  if (!isCostumeId(id)) notFound();
-
-  return <CostumeDetailScreen id={id} />;
+export const dynamic='force-dynamic';
+export default async function Page({params}:{params:Promise<{id:string}>}){
+ const {id}=await params;const actor=null;
+ const data=await getCostumeDetail(id,actor,false).catch(e=>{if(e instanceof ApiError&&e.status===404)notFound();throw e;});
+ return <LiveCostumeDetail costume={data}/>;
 }

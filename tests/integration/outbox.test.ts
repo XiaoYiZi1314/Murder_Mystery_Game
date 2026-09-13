@@ -65,12 +65,12 @@ test("建员工入队 staff.created，投递后通知 exactly-once", async () =>
   const staffId = staff.id as string;
 
   const queued = await prisma.eventOutbox.findFirst({
-    where: { type: "staff.created", status: "pending" },
+    where: { type: "staff.created", status: "pending", payloadJson:{path:"$.userId",equals:staffId} },
     orderBy: { id: "desc" },
   });
   assert.ok(queued, "建员工应写入 outbox");
 
-  const first = await processOutboxBatch(20);
+  const first = await processOutboxBatch(20, [queued.id]);
   assert.ok(first.delivered >= 1, `至少投递 1 条，实际 ${JSON.stringify(first)}`);
 
   const done = await prisma.eventOutbox.findUnique({ where: { id: queued.id } });
@@ -81,7 +81,7 @@ test("建员工入队 staff.created，投递后通知 exactly-once", async () =>
   assert.equal(notes.length, 1);
   assert.equal(notes[0].title, "账号已开通");
 
-  const second = await processOutboxBatch(20);
+  const second = await processOutboxBatch(20, [queued.id]);
   assert.equal(second.processed, 0, "已投递事件不应重复处理");
   const notesAgain = await prisma.notification.findMany({
     where: { userId: BigInt(staffId), type: "staff.created" },
@@ -104,7 +104,8 @@ test("改密入队 staff.updated，投递通知员工", async () => {
   });
   assert.equal(patched.status, 200);
 
-  await processOutboxBatch(20);
+  const events=await prisma.eventOutbox.findMany({where:{payloadJson:{path:"$.userId",equals:staffId}}});
+  await processOutboxBatch(20,events.map(e=>e.id));
   const notes = await prisma.notification.findMany({ where: { userId: BigInt(staffId), type: "staff.updated" } });
   assert.ok(notes.length >= 1, "改密应投递 staff.updated 通知");
   assert.ok(notes.some((n) => n.title === "密码已被重置"), `应含改密通知，实际 ${JSON.stringify(notes.map((n) => n.title))}`);

@@ -1,5 +1,4 @@
-import { HomePage } from "@/features/home/home-page";
-
-export default function Page() {
-  return <HomePage variant="home" />;
-}
+import { HomePage } from '@/features/home/home-page';
+import { homeContent } from '@/server/catalog/home';
+export const dynamic='force-dynamic';
+export default async function Page(){return <HomePage variant="home" data={await homeContent()}/>;}

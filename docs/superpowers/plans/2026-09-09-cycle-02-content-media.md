@@ -1,5 +1,7 @@
 # C2 内容与媒体开发计划
 
+> **2026-09-13 执行状态：** C2 开发实现已补齐，详情见 [完成与验收记录](../../c2-verification.md)。本机测试、三档浏览器检查与安全 SQL 演练已执行；生产升级 runner 全流程、生产备份恢复和 Docker/Nginx 实机验收不冒充已完成，见下方未勾选事项。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development（推荐）或 superpowers:executing-plans 逐工作包执行，使用复选框记录结果。本文件是一期交付的内部周期，不是功能缩水后的独立产品分期。
 
 **Goal:** 让剧本、妆造、DM、首页推荐和图片上传接入真实数据，顾客可浏览、员工可按权限维护，为 C3 排期提供可信内容。
@@ -22,11 +24,11 @@
 
 ## 周期边界与交付物
 
-**现状：** `src/features/catalog/*`、`src/features/home/home-page.tsx`、`src/features/admin/admin-content.tsx` 已有视觉页面和演示交互；Prisma 中 JSON 标签、妆造库存和状态与需求存在差异，尚无真实上传和内容 CRUD。
+**检查前基线（保留记录）：** `src/features/catalog/*`、`src/features/home/home-page.tsx`、`src/features/admin/admin-content.tsx` 已有视觉页面和演示交互；Prisma 中 JSON 标签、妆造库存和状态与需求存在差异，尚无真实上传和内容 CRUD。
 
 **前置：** C1 已交付正确身份/数据基线、`requireActor()`、`assertPermission(actor, permission, resource?)`、`withCommand(context, work)`、`appendAudit(tx, input)`；确认迁移目标库和备份，不执行真实库 reset。
 
-**冻结项：** D11 在 C2-T3 开始前冻结 settings 权限和 DM 额外数据范围；未冻结时不能把设置默认开放给全部员工。
+**冻结项：** D11 已由需求方于本轮确认：manager/boss 可修改精选、商家二维码、通知开关；DM/customer 禁止。精选唯一来源为 Script.featured，设置白名单不允许任意 JSON PATCH；不改变员工账号权限。
 
 **输入：** C1 的用户/DM 身份、数据库连接和鉴权；原 HTML、现有素材和设计变量；经内容负责人确认的剧本角色背景、标签及关联数据。
 
@@ -63,11 +65,12 @@
 
 **输入/输出：** 消费 C1 Prisma 和 Actor；输出 `getScriptDetail(actor, id)`、`listScripts(query)`、`saveScript(actor, id, input)` 及对应 costume/DM 服务。`id` 是十进制字符串；DTO 必须显式转换 Decimal 和关联集合，不直接返回 Prisma 对象。
 
-- [ ] 先写真实 MySQL 测试：匿名详情 401、公开列表无草稿、角色与双向关联、无效人数区间 422、重复关联不会重复记录；确认未实现时失败。
-- [ ] 按源字段建立 migration，列出旧字段数据映射；将库存/难度等演示扩展与正式必填字段分离，已有数据先导出再迁移。
-- [ ] 实现筛选、名称搜索、稳定次序加 ID 打破并列、分页、价格排序和评分排序；缺少评价时 `review_count=0`，不伪造真实评分。
-- [ ] 每次员工内容写入先 `assertPermission`，在 `withCommand` 事务内完成主表/关系/`appendAudit`；追加 `catalog.changed` outbox 事件失效公开内容缓存，不通知顾客；外键引用删除冲突返回 409，不能连带删除历史场次。
-- [ ] 运行集成测试及 Prisma 校验，核对新增/编辑/上下架/删除的前后摘要；提交可独立审查的数据服务变更。
+- [x] 真实 MySQL 测试覆盖：匿名详情 401、公开列表无草稿、角色与双向关联、无效人数区间 422、重复关联不会重复记录；执行记录见验收文档（不回填未留证的先红后绿顺序）。
+- [x] 按源字段建立安全替代迁移和映射；库存/难度与正式字段分离；测试库操作前导出，安全 SQL 已以 C1 fixture 演练。保留已应用历史，不将演练等同于生产升级。
+- [ ] 上线门禁：在恢复副本验证升级 runner 的 apply/备份/Prisma resolve 全流程，获得真实库备份、停写与升级授权后执行业务迁移。
+- [x] 实现筛选、名称搜索、稳定次序加 ID 打破并列、分页、价格排序和评分排序；缺少评价时 `review_count=0`，不伪造真实评分。
+- [x] 每次员工内容写入先 `assertPermission`，在 `withCommand` 事务内完成主表/关系/`appendAudit`；追加 `catalog.changed` outbox 事件失效公开内容缓存，不通知顾客；外键引用删除冲突返回 409，不能连带删除历史场次。
+- [x] 运行集成测试及 Prisma 校验，核对新增/编辑/上下架/删除的前后摘要；变更保留在工作区供审查，本轮未自动创建 Git 提交。
 
 ## C2-T2：统一上传与公私存储边界
 
@@ -75,11 +78,12 @@
 
 **输入/输出：** 定义拟新增 `StorageDriver.put({ key, bytes, contentType, visibility })`、`read(key)`、`delete(key)`；返回资源元数据和公开 URL/受限读取地址。`STORAGE_DRIVER=local`，私有目录独立于公开 `/uploads` 和 Nginx alias。
 
-- [ ] 先准备 JPEG/PNG/WebP、伪装文本、损坏图、超 5MB 图、路径穿越名测试；对私有文件直接 URL 和另一账号读取断言拒绝。
-- [ ] 同时校验声明 MIME、文件签名和 sharp 解码；仅接收本期白名单 JPEG/PNG/WebP，拒绝用户上传 SVG，原项目已审查的静态 SVG 素材继续保留。
-- [ ] 在 sharp 解码阶段限制像素量，重编码去掉原始元数据；按封面/角色/DM/妆造现有展示比例生成尺寸和缩略图，保留列表使用缩略图的映射。
-- [ ] 随机生成服务端键，不使用客户端路径；上传后 DB 失败须删除新文件，引用更新失败不得删旧图；仅清理超出宽限期且无引用的孤立资源。
-- [ ] 上传权限区分 DM 本人照片、manager/boss 内容素材、C6 举报证据；私有读取必须重新鉴权，日志仅记资源 ID 和用途；跑媒体测试并检查容器卷持久化。
+- [x] 先准备 JPEG/PNG/WebP、伪装文本、损坏图、超 5MB 图、路径穿越名测试；对私有文件直接 URL 和另一账号读取断言拒绝。
+- [x] 同时校验声明 MIME、文件签名和 sharp 解码；仅接收本期白名单 JPEG/PNG/WebP，拒绝用户上传 SVG，原项目已审查的静态 SVG 素材继续保留。
+- [x] 在 sharp 解码阶段限制像素量，重编码去掉原始元数据；按封面/角色/DM/妆造现有展示比例生成尺寸和缩略图，保留列表使用缩略图的映射。
+- [x] 随机生成服务端键，不使用客户端路径；上传后 DB 失败须删除新文件，引用更新失败不得删旧图；仅清理超出宽限期且无引用的孤立资源。
+- [x] 上传权限区分 DM 本人照片、manager/boss 内容素材、C6 举报证据；私有读取必须重新鉴权，日志仅记资源 ID 和用途；媒体测试通过，Dockerfile/Compose/Nginx 配置及非 root 目录权限已实现。
+- [ ] 上线门禁：Docker 环境中实测公私卷持久化、容器重建、Nginx 公开直出与私有拒绝。本机未安装 Docker，不能勾选该项。
 
 ## C2-T3：后台内容管理与门店设置
 
@@ -87,11 +91,11 @@
 
 **输入/输出：** 消费内容 DTO、上传资源、C1 权限表；输出可重复编辑的表单、明确的保存结果和刷新后的真实列表。原 `/admin/content` 保留聚合入口并链接细分路径。
 
-- [ ] 先写权限测试矩阵：customer 禁止维护；DM 修改他人资料 403、修改自己成功；manager/boss 内容 CRUD；D11 允许与拒绝设置写入分别覆盖。
-- [ ] 从现有共享 Modal/Form/Card/Button 扩展编辑器，支持角色排序、标签、上下架、DM/妆造多选关联；服务端返回字段错误时定位到原表单字段。
-- [ ] 保存以最后读取的 `updated_at` 或明确版本作条件，陈旧修改返回 409 并显示重新加载选项；内容写不依靠前端 disabled 解决覆盖。
-- [ ] 设置编辑精选、二维码和通知开关时只接受D11冻结的白名单键及逐键权限；精选在 scripts 与 settings 中确定一个规范来源，另一侧仅引用，不双写失配。通知开关保存服务端配置，交C3/C8在各自渠道实际消费，不能仅改变前端按钮；日志/账本不受通知开关影响。
-- [ ] 上下架、删除、关联、DM 资料和设置均检查审计；HTTP 请求可绕过按钮时仍受同等限制；完成后台键盘和窄屏表单检查。
+- [x] 权限测试矩阵覆盖：customer 禁止维护；DM 修改他人资料 403、修改自己成功；manager/boss 内容 CRUD；D11 允许与拒绝设置写入分别覆盖。
+- [x] 从现有共享 Modal/Form/Card/Button 扩展编辑器，支持角色排序、标签、上下架、DM/妆造多选关联；服务端返回字段错误时定位到原表单字段。
+- [x] 保存以最后读取的 `updated_at` 或明确版本作条件，陈旧修改返回 409 并显示重新加载选项；内容写不依靠前端 disabled 解决覆盖。
+- [x] 设置编辑精选、二维码和通知开关时只接受D11冻结的白名单键及逐键权限；精选在 scripts 与 settings 中确定一个规范来源，另一侧仅引用，不双写失配。通知开关保存服务端配置，交C3/C8在各自渠道实际消费，不能仅改变前端按钮；日志/账本不受通知开关影响。
+- [x] 上下架、删除、关联、DM 资料和设置均检查审计；HTTP 请求可绕过按钮时仍受同等限制；完成后台键盘和窄屏表单检查。
 
 ## C2-T4：替换顾客演示数据并保持视觉
 
@@ -99,15 +103,15 @@
 
 **输入/输出：** 消费 snake_case API/RSC DTO，经 adapter 转 UI camelCase；输出原样式页面、筛选 URL、加载/错误/空态、真实资料及详情登录回跳。
 
-- [ ] 剧本详情鉴权放服务端，避免 HTML、RSC payload、接口、预取或缓存向游客泄漏受限内容；公开列表封面/概要仍可浏览。
-- [ ] 保留原 slug 链接映射和 23 页作用域，不把数据库 ID 直接替换已有分享链接；列表和详情的关联点击可完整往返。
-- [ ] 首页推荐来自后台，二维码来自公开设置；近期场次区域在 C3 接入，不能把原示例排期冒充实时排期；DM 带过剧本在 C4 履约记录产生前显示真实空态。
-- [ ] 接入多图比例、非剧透角色介绍和 DM 擅长标签；评价区消费 C6 约定只读结构/空态，不在 C2 新建发评假流程。
-- [ ] 对照原稿验证 390/820/1440 宽度的封面、文字换行、间距和表单状态；完整九视口与截图验收归 C8，不以构建成功替代视觉结论。
+- [x] 剧本详情鉴权放服务端，避免 HTML、RSC payload、接口、预取或缓存向游客泄漏受限内容；公开列表封面/概要仍可浏览。
+- [x] 保留原 slug 链接映射和 23 页作用域，不把数据库 ID 直接替换已有分享链接；列表和详情的关联点击可完整往返。
+- [x] 首页推荐来自后台，二维码来自公开设置；近期场次区域在 C3 接入，不能把原示例排期冒充实时排期；DM 带过剧本在 C4 履约记录产生前显示真实空态。
+- [x] 接入多图比例、非剧透角色介绍和 DM 擅长标签；评价区消费 C6 约定只读结构/空态，不在 C2 新建发评假流程。
+- [x] 对照原稿验证 390/820/1440 宽度的封面、文字换行、间距和表单状态；完整九视口与截图验收归 C8，不以构建成功替代视觉结论。
 
 ## HTTP 契约样例与可执行验收
 
-以下是计划实现后的样例，不表示接口当前已存在或测试已通过；测试前在独立测试库创建 manager、customer、DM、妆造及可上架剧本并登录取得 Cookie。写操作须先带对应 Cookie 请求 `GET /api/auth/csrf`，取 `data.csrf_token` 并传入 `X-CSRF-Token`；`Origin` 为 `new URL(BASE_URL).origin`。
+以下为契约使用样例；实际实现和执行结果以验收记录为准。测试前在独立测试库创建 manager、customer、DM、妆造及可上架剧本并登录取得 Cookie。写操作须先带对应 Cookie 请求 `GET /api/auth/csrf`，取 `data.csrf_token` 并传入 `X-CSRF-Token`；`Origin` 为 `new URL(BASE_URL).origin`。
 
 ```http
 POST /api/admin/scripts
@@ -122,7 +126,7 @@ HTTP/1.1 201 Created
 {"code":0,"message":"创建成功","data":{"id":"101","status":"draft"}}
 ```
 
-拟新增 `tests/http/c2-content.mjs`，运行 `node --env-file=.env.test tests/http/c2-content.mjs`；环境提供 `BASE_URL`、`TEST_SCRIPT_ID`、`SESSION_CUSTOMER_COOKIE`，对象必须是专用测试库已上架剧本。
+本段保留为手工 HTTP 示例（未新增独立 `tests/http/c2-content.mjs`）；实际自动化由 `tests/integration/content.test.ts` 与 `tests/e2e/content.spec.ts` 覆盖。若单独执行下面示例，环境提供 `BASE_URL`、`TEST_SCRIPT_ID`、`SESSION_CUSTOMER_COOKIE`，对象必须是专用测试库已上架剧本。
 
 ```js
 import assert from 'node:assert/strict';

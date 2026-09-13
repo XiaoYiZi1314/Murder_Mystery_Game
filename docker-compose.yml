@@ -6,6 +6,13 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    environment:
+      STORAGE_DRIVER: local
+      UPLOAD_PUBLIC_DIR: /data/uploads
+      UPLOAD_PRIVATE_DIR: /data/private-media
+    volumes:
+      - uploads-public:/data/uploads
+      - uploads-private:/data/private-media
     expose:
       - "3000"
     depends_on:
@@ -74,6 +81,7 @@ services:
       - "${NGINX_PORT:-80}:80"
     volumes:
       - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - uploads-public:/srv/uploads:ro
     depends_on:
       app:
         condition: service_healthy
@@ -94,6 +102,8 @@ services:
       - app-network
 
 volumes:
+  uploads-public:
+  uploads-private:
   mysql-data:
   redis-data:
 

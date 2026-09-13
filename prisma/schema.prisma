@@ -19,38 +19,57 @@ enum UserStatus {
   disabled
 }
 
-enum ScriptDifficulty {
-  beginner
-  intermediate
-  advanced
-}
-
+// C2：内容三态（迁移 content-media）。草稿对顾客不可见；off=下架。
 enum ScriptStatus {
   draft
-  published
-  archived
+  on
+  off
 }
 
+// C2：妆造为纯内容展示（无库存概念，库存字段已移除）。
 enum CostumeStatus {
-  available
-  maintenance
-  retired
+  draft
+  on
+  off
+}
+
+// C2：DM 展示开关。inactive 不出现在公开列表，历史场次保留关联。
+enum DmStatus {
+  active
+  inactive
+}
+
+// C2-T2：媒体用途与可见性（私有媒体不挂 /uploads 公开路径）。
+enum MediaPurpose {
+  cover
+  role
+  dm
+  costume
+  report
+}
+
+enum MediaVisibility {
+  public
+  private
 }
 
 // C1：草案状态沿用既有集合（小写）；C3 按共享协议 §5 扩展为完整状态机。
 enum GameSessionStatus {
-  scheduled
+  draft
   open
   full
-  completed
+  locked
+  running
+  finished
   cancelled
 }
 
 enum BookingStatus {
-  pending
-  confirmed
-  completed
+  joined
+  locked
+  finished
   cancelled
+  jumped
 }
 
 enum IdempotencyStatus {
@@ -65,22 +84,26 @@ enum OutboxStatus {
 }
 
 model User {
-  id            BigInt       @id @default(autoincrement())
-  phone         String       @unique @db.VarChar(32)
-  nickname      String       @db.VarChar(80)
-  passwordHash  String       @db.VarChar(255)
-  balance       Decimal      @default(0) @db.Decimal(10, 2)
-  points        Int          @default(0)
-  totalTopup    Decimal      @default(0) @db.Decimal(10, 2)
-  role          UserRole     @default(customer)
-  status        UserStatus   @default(active)
-  memberLevelId BigInt?
-  memberLevel   MemberLevel? @relation(fields: [memberLevelId], references: [id], onDelete: SetNull)
-  dmProfile     Dm?
-  bookings      Booking[]
-  notifications Notification[]
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  id                BigInt           @id @default(autoincrement())
+  phone             String           @unique @db.VarChar(32)
+  nickname          String           @db.VarChar(80)
+  passwordHash      String           @db.VarChar(255)
+  balance           Decimal          @default(0) @db.Decimal(10, 2)
+  points            Int              @default(0)
+  totalTopup        Decimal          @default(0) @db.Decimal(10, 2)
+  role              UserRole         @default(customer)
+  status            UserStatus       @default(active)
+  memberLevelId     BigInt?
+  memberLevel       MemberLevel?     @relation(fields: [memberLevelId], references: [id], onDelete: SetNull)
+  dmProfile         Dm?
+  bookingRequests   BookingRequest[] @relation("Applicant")
+  reviewedRequests  BookingRequest[] @relation("Reviewer")
+  initiatedSessions Session[]        @relation("Initiator")
+  bookings          Booking[]
+  notifications     Notification[]
+  mediaAssets       MediaAsset[]
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
 
   @@index([role, status])
   @@index([memberLevelId])
@@ -99,68 +122,157 @@ model MemberLevel {
   updatedAt      DateTime @updatedAt
 }
 
+// C2：difficulty 与 tags(Json) 移除；角色/标签/妆造/DM 全部改为显式关联表。
+// 精选（featured）为唯一来源：公开首页推荐只读派生，不双写。
 model Script {
-  id               BigInt           @id @default(autoincrement())
-  slug             String           @unique @db.VarChar(191)
-  title            String           @db.VarChar(160)
-  coverUrl         String           @db.VarChar(2048)
-  tagline          String?          @db.VarChar(255)
-  synopsis         String           @db.Text
-  durationMinutes  Int
-  minPlayers       Int
-  maxPlayers       Int
-  difficulty       ScriptDifficulty
-  pricePerPlayer   Decimal          @db.Decimal(10, 2)
-  status           ScriptStatus     @default(draft)
-  tags             Json?
-  sessions         Session[]
-  costumes         Costume[]
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
+  id              BigInt            @id @default(autoincrement())
+  slug            String            @unique @db.VarChar(191)
+  title           String            @db.VarChar(160)
+  coverUrl        String            @db.VarChar(2048)
+  tagline         String?           @db.VarChar(255)
+  synopsis        String            @db.Text
+  durationMinutes Int
+  minPlayers      Int
+  maxPlayers      Int
+  pricePerPlayer  Decimal           @db.Decimal(10, 2)
+  status          ScriptStatus      @default(draft)
+  featured        Boolean           @default(false)
+  reviewCount     Int               @default(0)
+  avgRating       Decimal?          @db.Decimal(3, 2)
+  characters      ScriptCharacter[]
+  scriptTags      ScriptTag[]
+  scriptCostumes  ScriptCostume[]
+  scriptDms       ScriptDm[]
+  bookingRequests BookingRequest[]
+  sessions        Session[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 
-  @@index([status, difficulty])
+  @@index([status, updatedAt])
+  @@index([featured, status])
+}
+
+model ScriptCharacter {
+  id        BigInt   @id @default(autoincrement())
+  scriptId  BigInt
+  script    Script   @relation(fields: [scriptId], references: [id], onDelete: Cascade)
+  name      String   @db.VarChar(80)
+  image     String?  @db.VarChar(2048)
+  bio       String?  @db.Text
+  sort      Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([scriptId, sort])
+}
+
+model Tag {
+  id         BigInt      @id @default(autoincrement())
+  name       String      @unique @db.VarChar(40)
+  scriptTags ScriptTag[]
+  dmTags     DmTag[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+}
+
+// 剧本↔标签：剧本侧级联，标签侧阻止（被引用标签不可删，服务层 409）。
+model ScriptTag {
+  scriptId BigInt
+  tagId    BigInt
+  script   Script @relation(fields: [scriptId], references: [id], onDelete: Cascade)
+  tag      Tag    @relation(fields: [tagId], references: [id], onDelete: Restrict)
+
+  @@id([scriptId, tagId])
+}
+
+// 剧本↔妆造：显式中间表（替代 C1 隐式 _costumetoscript）。
+model ScriptCostume {
+  scriptId  BigInt
+  costumeId BigInt
+  script    Script  @relation(fields: [scriptId], references: [id], onDelete: Cascade)
+  costume   Costume @relation(fields: [costumeId], references: [id], onDelete: Restrict)
+
+  @@id([scriptId, costumeId])
+}
+
+// 剧本↔DM：带过本关系；DM 侧阻止（DM 账号生命周期由员工管理负责）。
+model ScriptDm {
+  scriptId BigInt
+  dmId     BigInt
+  script   Script @relation(fields: [scriptId], references: [id], onDelete: Cascade)
+  dm       Dm     @relation(fields: [dmId], references: [id], onDelete: Restrict)
+
+  @@id([scriptId, dmId])
 }
 
 model Dm {
-  id        BigInt    @id @default(autoincrement())
-  userId    BigInt    @unique
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  bio       String?   @db.Text
-  rating    Decimal?  @db.Decimal(3, 2)
-  sessions  Session[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  slug           String?           @unique @db.VarChar(191)
+  id             BigInt            @id @default(autoincrement())
+  userId         BigInt            @unique
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio            String?           @db.Text
+  avatar         String?           @db.VarChar(2048)
+  photo          String?           @db.VarChar(2048)
+  rating         Decimal?          @db.Decimal(3, 2)
+  status         DmStatus          @default(active)
+  backupSessions SessionBackupDm[]
+  sessions       Session[]
+  scriptDms      ScriptDm[]
+  dmTags         DmTag[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@index([status])
 }
 
+model DmTag {
+  dmId  BigInt
+  tagId BigInt
+  dm    Dm     @relation(fields: [dmId], references: [id], onDelete: Cascade)
+  tag   Tag    @relation(fields: [tagId], references: [id], onDelete: Restrict)
+
+  @@id([dmId, tagId])
+}
+
+// C2：妆造=内容展示。imageUrl→coverUrl；images 为已审核站内 URL 数组（T2 媒体后回填）。
 model Costume {
-  id             BigInt        @id @default(autoincrement())
-  name           String        @db.VarChar(160)
-  imageUrl       String        @db.VarChar(2048)
-  description    String?       @db.Text
-  stockTotal     Int           @default(0)
-  stockAvailable Int           @default(0)
-  status         CostumeStatus @default(available)
-  scripts        Script[]
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  slug           String?         @unique @db.VarChar(191)
+  id             BigInt          @id @default(autoincrement())
+  name           String          @db.VarChar(160)
+  coverUrl       String          @db.VarChar(2048)
+  images         Json?
+  description    String?         @db.Text
+  status         CostumeStatus   @default(draft)
+  scriptCostumes ScriptCostume[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 
   @@index([status])
 }
 
 model Session {
-  id          BigInt            @id @default(autoincrement())
-  scriptId    BigInt
-  script      Script            @relation(fields: [scriptId], references: [id], onDelete: Restrict)
-  dmId        BigInt?
-  dm          Dm?               @relation(fields: [dmId], references: [id], onDelete: SetNull)
-  startsAt    DateTime
-  endsAt      DateTime
-  roomName    String            @db.VarChar(80)
-  capacity    Int
-  status      GameSessionStatus @default(scheduled)
-  bookings    Booking[]
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  id              BigInt            @id @default(autoincrement())
+  scriptId        BigInt
+  script          Script            @relation(fields: [scriptId], references: [id], onDelete: Restrict)
+  dmId            BigInt?
+  dm              Dm?               @relation(fields: [dmId], references: [id], onDelete: SetNull)
+  startsAt        DateTime
+  endsAt          DateTime
+  roomName        String            @db.VarChar(80)
+  capacity        Int
+  minPlayers      Int               @default(1)
+  bookedCount     Int               @default(0)
+  pricePerPlayer  Decimal           @default(0) @db.Decimal(10, 2)
+  source          String            @default("merchant") @db.VarChar(20)
+  initiatorUserId BigInt?
+  initiator       User?             @relation("Initiator", fields: [initiatorUserId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  remark          String?           @db.VarChar(500)
+  backupDms       SessionBackupDm[]
+  bookingRequest  BookingRequest?
+  status          GameSessionStatus @default(draft)
+  bookings        Booking[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 
   @@index([scriptId, startsAt])
   @@index([dmId, startsAt])
@@ -168,21 +280,53 @@ model Session {
 }
 
 model Booking {
-  id          BigInt        @id @default(autoincrement())
-  bookingNo   String        @unique @db.VarChar(40)
-  userId      BigInt
-  user        User          @relation(fields: [userId], references: [id], onDelete: Restrict)
-  sessionId   BigInt
-  session     Session       @relation(fields: [sessionId], references: [id], onDelete: Restrict)
-  playerCount Int
-  totalAmount Decimal       @db.Decimal(10, 2)
-  status      BookingStatus @default(pending)
-  note        String?       @db.VarChar(500)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id              BigInt        @id @default(autoincrement())
+  bookingNo       String        @unique @db.VarChar(40)
+  userId          BigInt
+  user            User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  sessionId       BigInt
+  session         Session       @relation(fields: [sessionId], references: [id], onDelete: Restrict)
+  playerCount     Int
+  totalAmount     Decimal       @db.Decimal(10, 2)
+  contactName     String        @default("") @db.VarChar(80)
+  contactPhone    String        @default("") @db.VarChar(32)
+  cancelledAt     DateTime?
+  // C4 must set this guard atomically with recording any deposit before extending cancellation.
+  depositRecorded Boolean       @default(false)
+  status          BookingStatus @default(joined)
+  note            String?       @db.VarChar(500)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
   @@index([userId, createdAt])
   @@index([sessionId, status])
+}
+
+// C2：店铺设置。key/value(JSON)；写入白名单与逐键权限见 settings 服务（D11 冻结 2026-09-10）。
+model Setting {
+  key       String   @id @db.VarChar(64)
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+// C2-T2：媒体资产登记。key 为服务端随机值；私有资产不进入 /uploads 公开目录。
+model MediaAsset {
+  id         BigInt           @id @default(autoincrement())
+  key        String           @unique @db.VarChar(64)
+  ownerId    BigInt?
+  owner      User?            @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  purpose    MediaPurpose
+  visibility MediaVisibility
+  format     String           @db.VarChar(10)
+  bytes      Int
+  width      Int?
+  height     Int?
+  url        String           @db.VarChar(2048)
+  thumbUrl   String?          @db.VarChar(2048)
+  createdAt  DateTime         @default(now())
+  references MediaReference[]
+
+  @@index([ownerId, createdAt])
 }
 
 model OperationLog {
@@ -233,17 +377,106 @@ model EventOutbox {
 }
 
 model Notification {
-  id        BigInt   @id @default(autoincrement())
+  id        BigInt    @id @default(autoincrement())
   userId    BigInt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type      String   @db.VarChar(100)
-  title     String   @db.VarChar(200)
-  body      String   @db.VarChar(2000)
-  eventId   String?  @db.VarChar(60)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String    @db.VarChar(100)
+  title     String    @db.VarChar(200)
+  body      String    @db.VarChar(2000)
+  href      String?   @db.VarChar(255)
+  eventId   String?   @db.VarChar(60)
   readAt    DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   @@unique([eventId, userId])
   @@index([userId, createdAt])
   @@map("notifications")
+}
+
+model MediaReference {
+  assetId    BigInt
+  asset      MediaAsset @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  entityType String     @db.VarChar(32)
+  entityId   String     @db.VarChar(64)
+
+  @@id([assetId, entityType, entityId])
+  @@index([entityType, entityId])
+}
+
+enum BookingRequestStatus {
+  pending
+  approved
+  rejected
+}
+
+model SessionBackupDm {
+  sessionId BigInt
+  dmId      BigInt
+  session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  dm        Dm      @relation(fields: [dmId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+
+  @@id([sessionId, dmId])
+}
+
+model BookingRequest {
+  id           BigInt               @id @default(autoincrement())
+  userId       BigInt
+  user         User                 @relation("Applicant", fields: [userId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  scriptId     BigInt
+  script       Script               @relation(fields: [scriptId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  expectedTime DateTime
+  playerCount  Int
+  contactName  String               @db.VarChar(80)
+  contactPhone String               @db.VarChar(32)
+  remark       String?              @db.VarChar(500)
+  status       BookingRequestStatus @default(pending)
+  reviewerId   BigInt?
+  reviewer     User?                @relation("Reviewer", fields: [reviewerId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  reviewedAt   DateTime?
+  reason       String?              @db.VarChar(500)
+  sessionId    BigInt?              @unique
+  session      Session?             @relation(fields: [sessionId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
+}
+
+// Read-only migration archives: keep them in the schema so later migrations
+// do not propose dropping the original states/amounts. No Prisma write delegate.
+
+model c3_legacy_bookings {
+  id          BigInt                    @default(0)
+  status      c3_legacy_bookings_status @default(pending)
+  playerCount Int
+  totalAmount Decimal                   @db.Decimal(10, 2)
+
+  @@ignore
+}
+
+model c3_legacy_sessions {
+  id       BigInt                    @default(0)
+  status   c3_legacy_sessions_status @default(scheduled)
+  capacity Int
+  startsAt DateTime
+  endsAt   DateTime
+  roomName String                    @db.VarChar(80)
+
+  @@ignore
+}
+
+enum c3_legacy_bookings_status {
+  pending
+  confirmed
+  completed
+  cancelled
+}
+
+enum c3_legacy_sessions_status {
+  scheduled
+  open
+  full
+  completed
+  cancelled
 }

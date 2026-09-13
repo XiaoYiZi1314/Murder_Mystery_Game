@@ -1,0 +1,94 @@
+﻿✔ 匿名列表 200 且无草稿；匿名详情 401 (1700.2741ms)
+✔ 顾客登录后可读详情；顾客看草稿详情 404；员工可读草稿 (65.5139ms)
+✖ 角色排序与剧本↔妆造/DM 双向关联 (1230.8864ms)
+✔ 无效人数区间/缺失必填/非法价格 422（字段级定位） (127.7286ms)
+✔ 顾客/DM 不得写内容（CSRF 合法时 403），匿名 401 (135.194ms)
+✔ 重复关联不重复记录（tag_ids/costume_ids/dm_ids 去重） (73.1193ms)
+✖ 标签管理：唯一 409；被引用删除 409；解除后删除成功 (142.5651ms)
+✖ 引用删除 409：被剧本引用的妆造不可物理删除；允许下架 (1935.1446ms)
+✔ 排序/分页/搜索：价格双排序、latest、rating 无评价不伪造 (370.4843ms)
+✔ DM 自改展示字段成功；改他人 403；manager 可改任意 (168.0621ms)
+✔ 员工内容写含同事务审计与 catalog.changed outbox (92.8288ms)
+✖ 条件更新：陈旧 updated_at 409，不覆盖他人修改 (189.1572ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 8
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 6525.9285
+
+✖ failing tests:
+
+test at tests\integration\content.test.ts:2:11283
+✖ 角色排序与剧本↔妆造/DM 双向关联 (1230.8864ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  404 !== 200
+  
+      at TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:294:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 404,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\integration\content.test.ts:2:16877
+✖ 标签管理：唯一 409；被引用删除 409；解除后删除成功 (142.5651ms)
+  AssertionError [ERR_ASSERTION]: 被剧本引用的标签不能直接删除
+  
+  500 !== 409
+  
+      at TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:399:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 500,
+    expected: 409,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\integration\content.test.ts:2:18030
+✖ 引用删除 409：被剧本引用的妆造不可物理删除；允许下架 (1935.1446ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  409 !== 200
+  
+      at TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:427:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 409,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\integration\content.test.ts:2:24835
+✖ 条件更新：陈旧 updated_at 409，不覆盖他人修改 (189.1572ms)
+  AssertionError [ERR_ASSERTION]: {"code":0,"message":"更新成功","data":{"id":"14","slug":"script-f342cb2f-ffc","title":"并发样本","cover":"/assets/cover-placeholder.webp","tagline":"陈旧覆盖","duration_minutes":240,"player_min":5,"player_max":6,"price":"168.00","status":"on","featured":false,"review_count":0,"avg_rating":null,"tags":[],"synopsis":"一封被海浪冲上岸的信，把十年前的小城秘密重新拉回桌面。六名镇民，各藏半句真话。","updated_at":"2026-09-13T09:59:41.727Z","characters":[],"dms":[],"costumes":[]}}
+  
+  200 !== 409
+  
+      at TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:540:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 200,
+    expected: 409,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

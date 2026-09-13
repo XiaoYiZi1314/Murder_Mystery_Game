@@ -108,6 +108,8 @@ export async function cleanupTestUsers(): Promise<void> {
   const users = await prisma.user.findMany({ where: { phone: { in: trackedPhones } }, select: { id: true } });
   const ids = users.map((u) => u.id);
   if (ids.length > 0) {
+    // Scope cleanup to users created by this suite, never flush shared Redis/outbox.
+    for(const id of ids)await prisma.eventOutbox.deleteMany({where:{payloadJson:{path:"$.userId",equals:id.toString()}}});
     await prisma.notification.deleteMany({ where: { userId: { in: ids } } });
     await prisma.operationLog.deleteMany({ where: { actorId: { in: ids } } });
     await prisma.idempotencyRecord.deleteMany({ where: { actorId: { in: ids } } });

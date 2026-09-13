@@ -15,14 +15,20 @@
     "prisma:generate": "prisma generate",
     "prisma:validate": "prisma validate",
     "postbuild": "node scripts/prepare-standalone.mjs",
-    "prisma:migrate": "prisma migrate deploy",
+    "prisma:migrate": "node --import tsx scripts/c2-migrate-guard.mts && node --import tsx scripts/c3-migrate-guard.mts && prisma migrate deploy",
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:seed": "node --import tsx prisma/seed.ts",
     "bootstrap:boss": "node --import tsx scripts/bootstrap-boss.ts",
     "dev:worker": "node --import tsx --watch src/worker/outbox-worker.ts",
     "dev:test": "node scripts/with-test-env.mjs npm run dev",
     "test:integration": "node --import tsx --test --test-concurrency=1 tests/integration/*.test.ts",
-    "test:all": "npm test && npm run test:integration"
+    "test:all": "npm test && npm run test:integration",
+    "c2:upgrade": "node --import tsx scripts/c2-safe-upgrade.mts",
+    "c2:migration:rehearse": "node --import tsx scripts/c2-migration-rehearsal.mts",
+    "c3:migration:rehearse": "node --import tsx scripts/c3-migration-rehearsal.mts",
+    "c3:worker:verify": "node --import tsx scripts/c3-worker-restart-check.mts",
+    "dev:worker:test": "node scripts/with-test-env.mjs node --import tsx src/worker/outbox-worker.ts",
+    "c3:schema:check": "node --import tsx scripts/c3-schema-check.mts"
   },
   "dependencies": {
     "@ant-design/nextjs-registry": "^1.3.0",
@@ -35,7 +41,8 @@
     "next": "^16.3.4",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "tailwind-merge": "^3.3.1"
+    "tailwind-merge": "^3.3.1",
+    "sharp": "^0.34.5"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",

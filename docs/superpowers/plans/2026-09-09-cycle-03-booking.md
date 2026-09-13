@@ -22,11 +22,11 @@
 
 ## 周期边界与交付物
 
-**现状：** `src/features/booking/{sessions-page,booking-page,validation}.tsx/ts`、`src/features/admin/admin-sessions.tsx` 和 `/me/booking` 已有原稿界面，当前报名和场次变化仍为客户端演示状态，小铃铛为提示。
+**实施前基线：** `src/features/booking/{sessions-page,booking-page,validation}.tsx/ts`、`src/features/admin/admin-sessions.tsx` 和 `/me/booking` 已有原稿界面，当前报名和场次变化仍为客户端演示状态，小铃铛为提示。
 
 **前置：** C1 身份/RBAC/审计/幂等命令/outbox 基础验收；C2 内容 ID、上架状态、价格与 DM 可选项可查询；通知 recipients 只能由服务端权限计算。
 
-**冻结项：** D01 在 C3-T3 开始前明确“自主预约通过是否自动为申请人创建报名占坑”。若是，审批同时生成 `joined` 单并校验联系人快照；若否，场次人数仍为 0，通知明确提醒申请人报名，不假定申请人数已占坑。
+**已冻结（2026-09-13）：** D01 审批通过自动为申请人生成 N 人 `joined` 报名，同事务占坑；无效联系人/容量整体回滚。D10 使用 UTC 存储、Asia/Shanghai 展示、周一起周。下述编辑保护矩阵已获需求方确认。
 
 **输入：** Actor、有效剧本/DM、用户联系方式、期望时间/人数、主备 DM 与价格；C1 `requireActor()`、`assertPermission(...)`、`withCommand(...)`、`appendAudit(tx, input)`、`appendEvent(tx, event)`。
 
@@ -73,11 +73,11 @@
 
 **输入/输出：** 消费 C1 Actor 与 C2 内容查询；拟输出 `createSession(actor,input)`、`updateSession(actor,id,input)`、`listPublicSessions(query)`。场次 DTO 统一 `booked_count,player_max,remaining_count,status,price`，C4 继续扩展同一状态机。
 
-- [ ] 先写失败测试：customer 创建 403、DM 可创建、一场一本、主备 DM 重复/无效关系 422、最小人数大于最大人数 422、默认价格复制和显式覆盖。
-- [ ] 用迁移修正原 `SCHEDULED/COMPLETED` 等演示枚举，保留 C4 全部状态；写明旧数据映射并在独立库验证，不直接假定现有记录可丢弃。
-- [ ] 创建支持 draft/open；按编辑矩阵分别测试允许和拒绝：已报名场次合法改备注/人数上限成功，上限低于 booked_count 或变更承诺字段 409；并发报名与改上限必须在同一数据库条件下重新核验容量。
-- [ ] 状态/关系写与 `appendAudit`、相关 `appendEvent` 同事务；取消仅本期 open/full/draft 且无押金状态，批量取消 joined 单并一次释放坑位，C4 接管有押金和开本后路径。
-- [ ] 验证不允许自动锁车、定时取消、直接跳 finished；后台显示真实权限和服务端冲突，提交可独立审查的场次管理变更。
+- [x] 测试已覆盖：customer 创建 403、DM 可创建、一场一本、主备 DM 重复/无效关系 422、最小人数大于最大人数 422、默认价格复制和显式覆盖。
+- [x] 用迁移修正原 `SCHEDULED/COMPLETED` 等演示枚举，保留 C4 全部状态；写明旧数据映射并在测试库独立表命名空间验证，不直接假定现有记录可丢弃。
+- [x] 创建支持 draft/open；按编辑矩阵分别测试允许和拒绝：已报名场次合法改备注/人数上限成功，上限低于 booked_count 或变更承诺字段 409；并发报名与改上限必须在同一数据库条件下重新核验容量。
+- [x] 状态/关系写与 `appendAudit`、相关 `appendEvent` 同事务；取消仅本期 open/full/draft 且无押金状态，批量取消 joined 单并一次释放坑位，C4 接管有押金和开本后路径。
+- [x] 验证不允许自动锁车、定时取消、直接跳 finished；后台显示真实权限和服务端冲突，提交可独立审查的场次管理变更。
 
 ## C3-T2：原子团队报名与取消
 
@@ -85,11 +85,11 @@
 
 **输入/输出：** 消费 actor、场次行与 C1 幂等协议；拟输出 `joinSession(actor, sessionId, input, commandContext)`、`cancelBooking(actor, bookingId, commandContext)`，均返回持久化报名和最新容量 DTO。
 
-- [ ] 写并发测试：剩余 3 坑时两个不同账号各报 2 人，仅一个成功；确认失败可由 409 明确解释，最终计数与订单人数一致。
-- [ ] 在同一事务内以条件更新或行锁完成 `booked_count+n<=player_max` 检查、报名创建和计数递增；Redis 锁、客户端校验和 disabled 不能代替数据库约束。
-- [ ] 幂等唯一键为 actor+operation+key，同键同 payload 回原报名，不同 payload 409；新建报名只接受服务端读取到的可报名状态和当前容量。
-- [ ] 本人取消以 `status=joined` 条件更新为 cancelled，同事务减坑；full 释放后转 open；取消与报名/商家取消并发必须产生单一合法结果，已取消重试不再扣人数。
-- [ ] 报名/取消成功提交后主动失效大厅缓存；数据库提交后 Redis 故障不返回误导性业务失败，读缓存失败回源，失效事件可重试；核验过期缓存不参与容量决策。
+- [x] 写并发测试：剩余 3 坑时两个不同账号各报 2 人，仅一个成功；确认失败可由 409 明确解释，最终计数与订单人数一致。
+- [x] 在同一事务内以条件更新或行锁完成 `booked_count+n<=player_max` 检查、报名创建和计数递增；Redis 锁、客户端校验和 disabled 不能代替数据库约束。
+- [x] 幂等唯一键为 actor+operation+key，同键同 payload 回原报名，不同 payload 409；新建报名只接受服务端读取到的可报名状态和当前容量。
+- [x] 本人取消以 `status=joined` 条件更新为 cancelled，同事务减坑；full 释放后转 open；取消与报名/商家取消并发必须产生单一合法结果，已取消重试不再扣人数。
+- [x] 报名/取消成功提交后主动失效大厅缓存；数据库提交后 Redis 故障不返回误导性业务失败，读缓存失败回源，失效事件可重试；核验过期缓存不参与容量决策。
 
 ## C3-T3：自主预约审核与我的预约
 
@@ -97,11 +97,11 @@
 
 **输入/输出：** 输入申请和冻结后的 D01；拟输出 `submitBookingRequest(actor,input,context)`、`reviewBookingRequest(actor,id,decision,input,context)`；通过结果必有唯一 `session_id`，D01 决定是否同时返回 `booking_id`。
 
-- [ ] 先覆盖申请提交/重复、非法时间与人数、非员工审批、两个员工同时通过、通过与拒绝竞争；断言只生成一个场次且审核结论不可被覆盖。
-- [ ] 审核通过由员工核对申请剧本/时间并确认主备 DM、人数上下限和价格；锁定 pending 申请，在单事务内创建 `source=customer` 的 open 场次、记录 initiator 和审批结果。
-- [ ] 按 D01 分支实现同事务报名或仅生成场次；自动报名需要人数仍合法和服务端用户联系人快照，否则 422 并保持 pending，不能创建半成品；达到上限时依容量规则显示 full。
-- [ ] 拒绝记录原因和审核人，不创建场次；`/me/booking` 分别读取 request 与 booking，展示待审核/已报名/已锁车/已完成/已取消/跳车，并避免把 approved 申请重复计作另一单报名。
-- [ ] 保留 `/admin/sessions` 聚合入口并链接 `/admin/sessions/pending`、`/admin/bookings`；取消操作复用 T2；锁车/履约按钮等到 C4 服务接通后启用，不能继续展示假成功。
+- [x] 先覆盖申请提交/重复、非法时间与人数、非员工审批、两个员工同时通过、通过与拒绝竞争；断言只生成一个场次且审核结论不可被覆盖。
+- [x] 审核通过由员工核对申请剧本/时间并确认主备 DM、人数上下限和价格；锁定 pending 申请，在单事务内创建 `source=customer` 的 open 场次、记录 initiator 和审批结果。
+- [x] 按已冻结 D01 实现同事务自动报名；自动报名需要人数仍合法和服务端用户联系人快照，否则 422 并保持 pending，不能创建半成品；达到上限时依容量规则显示 full。
+- [x] 拒绝记录原因和审核人，不创建场次；`/me/booking` 分别读取 request 与 booking，展示待审核/已报名/已锁车/已完成/已取消/跳车，并避免把 approved 申请重复计作另一单报名。
+- [x] 保留 `/admin/sessions` 聚合入口并链接 `/admin/sessions/pending`、`/admin/bookings`；取消操作复用 T2；锁车/履约按钮等到 C4 服务接通后启用，不能继续展示假成功。
 
 ## C3-T4：小铃铛与提交后通知
 
@@ -109,26 +109,26 @@
 
 **输入/输出：** 统一 `DbEvent {id,type,occurredAt,actorUserId,subjectType,subjectId,recipientUserIds,payload}`；输出持久化通知、本人未读数/已读，以及可供 C4–C8 扩展的事件派发接口。
 
-- [ ] `booking_request.created` 发给有审核权限的员工；`booking_request.approved/rejected` 发申请人；`booking.joined` 发可见场次的员工；`booking.cancelled` 更新相关员工待办；`session.cancelled` 发受影响报名账号。
-- [ ] `session.capacity_reached` 在人数跨越场次 player_min 时发员工“人数达标”提示，携带当前/最小/最大人数；只是提示而非锁车授权，C4 按 D02 校验真正锁车条件，容量满时显示 full。
-- [ ] 业务与 outbox 同事务；dispatcher 用 `event.id+recipient` 唯一键写 notifications 并入 Redis，重复消费不重发；进程在任一步骤退出后能重试，不因 Redis 暂时失败永久丢事件。
-- [ ] C3 必须启动真实消费者：在加载测试/开发环境后运行 `node --import tsx src/worker/outbox-worker.ts`，持续领取未处理 outbox、调用 dispatcher、记录重试及处理结果；C1 提供可运行入口，C3 接入本期事件并验证进程重启可继续消费，不能依赖手工调用 dispatcher 或等待 C8。
-- [ ] 只返回本人通知；ids 包含他人通知时 403 且不部分更新；多设备重复已读不产生新通知；列表空态/加载/错误、未读数和点击跳转复用实际 Button/Card/导航组件。
-- [ ] 在实际运行消费者时提交预约，轮询通知接口验证自动送达；再用重启/重复投递/Redis 断开测试核对事件数、通知数与幂等结果；本期不弹浏览器 Push 授权框，C8 只将现有 worker 生产化并接入关键事件 Push。
+- [x] `booking_request.created` 发给有审核权限的员工；`booking_request.approved/rejected` 发申请人；`booking.joined` 发可见场次的员工；`booking.cancelled` 更新相关员工待办；`session.cancelled` 发受影响报名账号。
+- [x] `session.capacity_reached` 在人数跨越场次 player_min 时发员工“人数达标”提示，携带当前/最小/最大人数；只是提示而非锁车授权，C4 按 D02 校验真正锁车条件，容量满时显示 full。
+- [x] 业务与 outbox 同事务；dispatcher 用 `event.id+recipient` 唯一键写 notifications 并入 Redis，重复消费不重发；进程在任一步骤退出后能重试，不因 Redis 暂时失败永久丢事件。
+- [x] C3 必须启动真实消费者：在加载测试/开发环境后运行 `node --import tsx src/worker/outbox-worker.ts`，持续领取未处理 outbox、调用 dispatcher、记录重试及处理结果；C1 提供可运行入口，C3 接入本期事件并验证进程重启可继续消费，不能依赖手工调用 dispatcher 或等待 C8。
+- [x] 只返回本人通知；ids 包含他人通知时 403 且不部分更新；多设备重复已读不产生新通知；列表空态/加载/错误、未读数和点击跳转复用实际 Button/Card/导航组件。
+- [x] 在实际运行消费者时提交预约，轮询通知接口验证自动送达；再用重启/重复投递/Redis 断开测试核对事件数、通知数与幂等结果；本期不弹浏览器 Push 授权框，C8 只将现有 worker 生产化并接入关键事件 Push。
 
 ## C3-T5：真实页面集成与回归
 
 **文件：** 修改 `src/features/booking/{sessions-page,booking-page,customer-header}.tsx`、`src/features/home/home-page.tsx`、`src/features/admin/{admin-sessions,admin-dashboard}.tsx`；拟新增 `src/features/booking/adapters.ts`、`src/app/api/me/{bookings,booking-requests}/route.ts`、`src/app/api/admin/bookings/route.ts`、`src/app/admin/bookings/page.tsx`、`src/features/admin/bookings/BookingList.tsx`、`tests/e2e/booking.spec.ts`。
 
-- [ ] 场次列表使用真实时间、剧本、DM 和容量，筛选通过查询参数读取；首页近期场次复用同一查询，展示“已报 X / 上限 Y，还差 Z 人”。
-- [ ] 报名表提交时保留用户输入，409 展示最新剩余人数并要求重新确认；网络超时用原幂等键重试，不先在 UI 永久乐观占坑。
-- [ ] 自主预约提交成功后进入我的预约并可重载查询；后台今日场次与待审核数取真实数据，铃铛入口不再只弹演示 Toast。
-- [ ] `/admin/bookings`在本期交付真实只读报名列表，支持授权范围内按场次/状态筛选与分页，复用现有后台表格；C4在同一页面扩展锁车/跳车等操作，不另建第二份名单。
-- [ ] 验证登录回跳、键盘焦点、loading/disabled/error/success、窄屏团队表单和后台表格；运行类型、lint、构建、并发集成与端到端测试并记录失败修复证据。
+- [x] 场次列表使用真实时间、剧本、DM 和容量，筛选通过查询参数读取；首页近期场次复用同一查询，展示“已报 X / 上限 Y，还差 Z 人”。
+- [x] 报名表提交时保留用户输入，409 展示最新剩余人数并要求重新确认；网络超时用原幂等键重试，不先在 UI 永久乐观占坑。
+- [x] 自主预约提交成功后进入我的预约并可重载查询；后台今日场次与待审核数取真实数据，铃铛入口不再只弹演示 Toast。
+- [x] `/admin/bookings`在本期交付真实只读报名列表，支持授权范围内按场次/状态筛选与分页，复用现有后台表格；C4在同一页面扩展锁车/跳车等操作，不另建第二份名单。
+- [x] 验证登录回跳、键盘焦点、loading/disabled/error/success、窄屏团队表单和后台表格；运行类型、lint、构建、并发集成与端到端测试并记录失败修复证据。
 
 ## HTTP 契约样例与可执行验收
 
-以下为实现后的验证样例，不表示当前已通过。先在独立测试库创建 3 坑且无人报名的 open 场次，以及已登录的 customer 和 DM 顾客身份；每次测试使用新场次，禁止对真实预约执行。写请求先通过 `GET /api/auth/csrf` 取得当前会话 `data.csrf_token`。
+以下为 HTTP 契约样例；实际已执行结果及差异见 [C3 验收记录](../../c3-verification.md)。先在独立测试库创建 3 坑且无人报名的 open 场次，以及已登录的 customer 和 DM 顾客身份；每次测试使用新场次，禁止对真实预约执行。写请求先通过 `GET /api/auth/csrf` 取得当前会话 `data.csrf_token`。
 
 ```http
 POST /api/sessions/201/bookings
@@ -186,3 +186,10 @@ assert.equal(first.data.remaining_count,1);
 - 交接 C4：同一 sessions/bookings 状态机、幂等命令、容量事务、事件收件人和 outbox；保留锁车/跳车/押金规则入口，禁止另造平行报名表或钱账。
 - 交接 C5/C7：场次来源、主 DM、申请人、团队报名账号和审计；交接 C8：关键预约事件与通知去重 ID，Push 无需反向控制业务提交。
 - 回退先暂停新报名/审批入口并保留只读查询，处理未发 outbox 后发布兼容版本；不能删除已生成场次/报名来“恢复演示数据”，容量修复必须基于数据库核对并留痕。
+
+
+## 2026-09-13 实施结果与边界
+
+C3-T1～T5 已接通真实数据库/API/UI/消费者；实现文件按职责合并至 `src/server/{sessions,bookings,booking-requests,notifications}` 与共用 helpers，集成验收集中在 `tests/integration/booking.test.ts`（未机械建立每个拟定测试文件）。完整证据、故障修复、命令及上线门禁见 [C3 验收记录](../../c3-verification.md)。
+
+已通过的基础检查：15 单元、53 全量集成（10 C3）、真实 Edge 的 C2/C3 联合流程、旧状态迁移演练和实际 worker 停止/重启/重投；最终版本的命令编号以验收记录为准。业务生产库未迁移，生产备份恢复、Docker/Nginx 验收及 C4/C5/C8 范围不在本次完成声明内。

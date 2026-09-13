@@ -1,0 +1,58 @@
+﻿✔ 匿名列表 200 且无草稿；匿名详情 401 (552.3748ms)
+✔ 顾客登录后可读详情；顾客看草稿详情 404；员工可读草稿 (72.0503ms)
+✔ 角色排序与剧本↔妆造/DM 双向关联 (1523.4806ms)
+✔ 无效人数区间/缺失必填/非法价格 422（字段级定位） (111.875ms)
+✔ 顾客/DM 不得写内容（CSRF 合法时 403），匿名 401 (99.9808ms)
+✔ 重复关联不重复记录（tag_ids/costume_ids/dm_ids 去重） (66.2264ms)
+✖ 标签管理：唯一 409；被引用删除 409；解除后删除成功 (148.4494ms)
+✖ 引用删除 409：被剧本引用的妆造不可物理删除；允许下架 (157.6385ms)
+✔ 排序/分页/搜索：价格双排序、latest、rating 无评价不伪造 (305.0862ms)
+✔ DM 自改展示字段成功；改他人 403；manager 可改任意 (125.1922ms)
+✔ 员工内容写含同事务审计与 catalog.changed outbox (121.2047ms)
+✔ 条件更新：陈旧 updated_at 409，不覆盖他人修改 (188.1795ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 10
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3798.3492
+
+✖ failing tests:
+
+test at tests\integration\content.test.ts:2:16877
+✖ 标签管理：唯一 409；被引用删除 409；解除后删除成功 (148.4494ms)
+  AssertionError [ERR_ASSERTION]: 解除引用后应可删除标签
+  
+  409 !== 200
+  
+      at TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:408:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 409,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\integration\content.test.ts:2:18030
+✖ 引用删除 409：被剧本引用的妆造不可物理删除；允许下架 (157.6385ms)
+  AssertionError [ERR_ASSERTION]: 解除引用后可删除
+  
+  409 !== 200
+  
+      at TestContext.<anonymous> (D:\Project\Murder_Mystery_Game\tests\integration\content.test.ts:429:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 409,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

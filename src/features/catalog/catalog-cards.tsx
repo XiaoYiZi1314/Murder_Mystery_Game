@@ -116,3 +116,8 @@ export function CostumeCard({ costume }: { costume: CostumeRecord }) {
     </Link>
   );
 }
+
+/** Shared live-data card retains the existing card/cover/body/foot structure. */
+export function ContentCard({item}:{item:import('./adapters').ContentCardData}){
+ return <Link className="card script-card" href={item.href}><div className="cover">{item.image?<Image src={item.image} alt={item.title} width={685} height={685} unoptimized/>:<div className="cover-word">{item.title}<small>照片待上传</small></div>}</div><div className="script-card-body"><div className="row-between"><span className="tag">{item.tags.join(' · ')||'门店内容'}</span><span className="meta">{item.players}</span></div><h3>{item.title}</h3><p>{item.summary||'详细介绍待补充'}</p><div className="script-card-foot"><span className="rating">{item.rating?`${item.rating} / 5`:'暂无评价'}</span>{item.price&&<span className="num">¥{item.price} / 人</span>}</div></div></Link>;
+}
