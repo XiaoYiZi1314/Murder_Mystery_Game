@@ -8,64 +8,77 @@ datasource db {
 }
 
 enum UserRole {
-  CUSTOMER
-  DM
-  MANAGER
-  BOSS
+  customer
+  dm
+  manager
+  boss
 }
 
 enum UserStatus {
-  ACTIVE
-  DISABLED
+  active
+  disabled
 }
 
 enum ScriptDifficulty {
-  BEGINNER
-  INTERMEDIATE
-  ADVANCED
+  beginner
+  intermediate
+  advanced
 }
 
 enum ScriptStatus {
-  DRAFT
-  PUBLISHED
-  ARCHIVED
+  draft
+  published
+  archived
 }
 
 enum CostumeStatus {
-  AVAILABLE
-  MAINTENANCE
-  RETIRED
+  available
+  maintenance
+  retired
 }
 
+// C1：草案状态沿用既有集合（小写）；C3 按共享协议 §5 扩展为完整状态机。
 enum GameSessionStatus {
-  SCHEDULED
-  OPEN
-  FULL
-  COMPLETED
-  CANCELLED
+  scheduled
+  open
+  full
+  completed
+  cancelled
 }
 
 enum BookingStatus {
-  PENDING
-  CONFIRMED
-  COMPLETED
-  CANCELLED
+  pending
+  confirmed
+  completed
+  cancelled
+}
+
+enum IdempotencyStatus {
+  pending
+  completed
+}
+
+enum OutboxStatus {
+  pending
+  delivered
+  dead
 }
 
 model User {
-  id            String       @id @default(cuid())
-  email         String?      @unique @db.VarChar(191)
-  phone         String?      @unique @db.VarChar(32)
+  id            BigInt       @id @default(autoincrement())
+  phone         String       @unique @db.VarChar(32)
+  nickname      String       @db.VarChar(80)
   passwordHash  String       @db.VarChar(255)
-  displayName   String       @db.VarChar(80)
-  avatarUrl     String?      @db.VarChar(2048)
-  role          UserRole     @default(CUSTOMER)
-  status        UserStatus   @default(ACTIVE)
+  balance       Decimal      @default(0) @db.Decimal(10, 2)
   points        Int          @default(0)
-  memberLevelId String?
+  totalTopup    Decimal      @default(0) @db.Decimal(10, 2)
+  role          UserRole     @default(customer)
+  status        UserStatus   @default(active)
+  memberLevelId BigInt?
   memberLevel   MemberLevel? @relation(fields: [memberLevelId], references: [id], onDelete: SetNull)
   dmProfile     Dm?
   bookings      Booking[]
+  notifications Notification[]
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
@@ -74,20 +87,20 @@ model User {
 }
 
 model MemberLevel {
-  id              String   @id @default(cuid())
-  code            String   @unique @db.VarChar(32)
-  name            String   @db.VarChar(80)
-  rank            Int      @unique
-  pointsThreshold Int      @default(0)
-  discountRate    Decimal  @default(1.0000) @db.Decimal(5, 4)
-  benefits        Json?
-  users           User[]
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             BigInt   @id @default(autoincrement())
+  code           String   @unique @db.VarChar(32)
+  name           String   @db.VarChar(80)
+  rank           Int      @unique
+  topupThreshold Decimal  @default(0) @db.Decimal(10, 2)
+  discountRate   Decimal  @default(1.0000) @db.Decimal(5, 4)
+  benefits       Json?
+  users          User[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
 model Script {
-  id               String           @id @default(cuid())
+  id               BigInt           @id @default(autoincrement())
   slug             String           @unique @db.VarChar(191)
   title            String           @db.VarChar(160)
   coverUrl         String           @db.VarChar(2048)
@@ -98,7 +111,7 @@ model Script {
   maxPlayers       Int
   difficulty       ScriptDifficulty
   pricePerPlayer   Decimal          @db.Decimal(10, 2)
-  status           ScriptStatus     @default(DRAFT)
+  status           ScriptStatus     @default(draft)
   tags             Json?
   sessions         Session[]
   costumes         Costume[]
@@ -109,8 +122,8 @@ model Script {
 }
 
 model Dm {
-  id        String    @id @default(cuid())
-  userId    String    @unique
+  id        BigInt    @id @default(autoincrement())
+  userId    BigInt    @unique
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   bio       String?   @db.Text
   rating    Decimal?  @db.Decimal(3, 2)
@@ -120,13 +133,13 @@ model Dm {
 }
 
 model Costume {
-  id             String        @id @default(cuid())
+  id             BigInt        @id @default(autoincrement())
   name           String        @db.VarChar(160)
   imageUrl       String        @db.VarChar(2048)
   description    String?       @db.Text
   stockTotal     Int           @default(0)
   stockAvailable Int           @default(0)
-  status         CostumeStatus @default(AVAILABLE)
+  status         CostumeStatus @default(available)
   scripts        Script[]
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
@@ -135,16 +148,16 @@ model Costume {
 }
 
 model Session {
-  id          String            @id @default(cuid())
-  scriptId    String
+  id          BigInt            @id @default(autoincrement())
+  scriptId    BigInt
   script      Script            @relation(fields: [scriptId], references: [id], onDelete: Restrict)
-  dmId        String?
+  dmId        BigInt?
   dm          Dm?               @relation(fields: [dmId], references: [id], onDelete: SetNull)
   startsAt    DateTime
   endsAt      DateTime
   roomName    String            @db.VarChar(80)
   capacity    Int
-  status      GameSessionStatus @default(SCHEDULED)
+  status      GameSessionStatus @default(scheduled)
   bookings    Booking[]
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
@@ -155,19 +168,82 @@ model Session {
 }
 
 model Booking {
-  id          String        @id @default(cuid())
+  id          BigInt        @id @default(autoincrement())
   bookingNo   String        @unique @db.VarChar(40)
-  userId      String
+  userId      BigInt
   user        User          @relation(fields: [userId], references: [id], onDelete: Restrict)
-  sessionId   String
+  sessionId   BigInt
   session     Session       @relation(fields: [sessionId], references: [id], onDelete: Restrict)
   playerCount Int
   totalAmount Decimal       @db.Decimal(10, 2)
-  status      BookingStatus @default(PENDING)
+  status      BookingStatus @default(pending)
   note        String?       @db.VarChar(500)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
   @@index([userId, createdAt])
   @@index([sessionId, status])
+}
+
+model OperationLog {
+  id            BigInt   @id @default(autoincrement())
+  actorId       BigInt
+  actorRole     UserRole
+  action        String   @db.VarChar(100)
+  targetType    String   @db.VarChar(60)
+  targetId      String   @db.VarChar(60)
+  summaryBefore Json?
+  summaryAfter  Json?
+  ip            String?  @db.VarChar(64)
+  createdAt     DateTime @default(now())
+
+  @@index([actorId, createdAt])
+  @@index([targetType, targetId])
+  @@map("operation_logs")
+}
+
+model IdempotencyRecord {
+  id           BigInt            @id @default(autoincrement())
+  actorId      BigInt
+  operation    String            @db.VarChar(100)
+  key          String            @db.VarChar(100)
+  requestHash  String            @db.VarChar(64)
+  status       IdempotencyStatus @default(pending)
+  responseJson Json?
+  createdAt    DateTime          @default(now())
+  completedAt  DateTime?
+
+  @@unique([actorId, operation, key])
+  @@index([status, createdAt])
+  @@map("idempotency_records")
+}
+
+model EventOutbox {
+  id          BigInt       @id @default(autoincrement())
+  type        String       @db.VarChar(100)
+  payloadJson Json
+  status      OutboxStatus @default(pending)
+  attempts    Int          @default(0)
+  nextRetryAt DateTime?
+  createdAt   DateTime     @default(now())
+  deliveredAt DateTime?
+
+  @@index([status, nextRetryAt])
+  @@map("event_outbox")
+}
+
+model Notification {
+  id        BigInt   @id @default(autoincrement())
+  userId    BigInt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   @db.VarChar(100)
+  title     String   @db.VarChar(200)
+  body      String   @db.VarChar(2000)
+  eventId   String?  @db.VarChar(60)
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@unique([eventId, userId])
+  @@index([userId, createdAt])
+  @@map("notifications")
 }

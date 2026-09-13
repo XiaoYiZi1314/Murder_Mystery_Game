@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Button, useToast } from "@/components/ui";
 import { Screen, SiteFooter, SiteHeader } from "@/components/layout";
 
-export type AdminSection = "dashboard" | "sessions" | "finance" | "content" | "ops";
+export type AdminSection = "dashboard" | "sessions" | "finance" | "content" | "ops" | "staff";
 
 export function AdminFrame({
   screen,

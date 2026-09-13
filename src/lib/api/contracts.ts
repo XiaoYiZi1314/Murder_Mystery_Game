@@ -1,183 +1,159 @@
-import type {
-  Booking,
-  BookingStatus,
-  CostumeSummary,
-  DmSummary,
-  GameSession,
-  GiftDisplayItem,
-  Id,
-  IsoDateTime,
-  ScriptDetail,
-  ScriptDifficulty,
-  ScriptSummary,
-  UserRole,
-  UserStatus,
-  UserSummary,
-} from "@/types/domain";
+import type { Id, IsoDateTime, MoneyAmount, UserRole, UserStatus } from "@/types/domain";
 
-export interface ApiError {
-  code: string;
+/**
+ * C1 统一 API 契约：REST `/api` + `{ code, message, data }`。
+ * wire 字段一律 snake_case；UI 侧用显式适配转 camelCase。
+ * 旧 `/api/v1` + `{ ok, error }` 草约已删除，不保留并行服务。
+ */
+
+// ---------- 统一响应 ----------
+
+export interface ApiResponse<T> {
+  code: number;
   message: string;
-  fieldErrors?: Record<string, string[]>;
+  data: T | null;
+  field_errors?: Record<string, string[]>;
 }
 
-export type ApiResult<T> =
-  { ok: true; data: T } | { ok: false; error: ApiError };
+export const ApiCodes = {
+  OK: 0,
+  INVALID_INPUT: 1001,
+  CSRF_INVALID: 1002,
+  ORIGIN_REJECTED: 1003,
+  NOT_FOUND: 1004,
+  UNAUTHENTICATED: 2001,
+  FORBIDDEN: 2002,
+  RATE_LIMITED: 2003,
+  INVALID_CREDENTIALS: 2004,
+  CONFLICT: 3001,
+  PHONE_TAKEN: 3101,
+  IDEMPOTENT_CONFLICT: 3201,
+  INTERNAL: 5000,
+} as const;
 
-export interface PageInfo {
+export type ApiCode = (typeof ApiCodes)[keyof typeof ApiCodes];
+
+// ---------- wire DTO（snake_case） ----------
+
+export interface MemberLevelDto {
+  id: Id;
+  code: string;
+  name: string;
+  rank: number;
+  topup_threshold: MoneyAmount;
+  discount_rate: string;
+}
+
+/** 本人资料：资金/积分均为只读展示字段，永不经 PATCH /api/me 修改。 */
+export interface MeDto {
+  id: Id;
+  phone: string;
+  nickname: string;
+  role: UserRole;
+  status: UserStatus;
+  balance: MoneyAmount;
+  points: number;
+  total_topup: MoneyAmount;
+  member_level: MemberLevelDto | null;
+  created_at: IsoDateTime;
+}
+
+/** 员工行：绝不含 password_hash。 */
+export interface StaffDto {
+  id: Id;
+  phone: string;
+  nickname: string;
+  role: UserRole;
+  status: UserStatus;
+  member_level_id: Id | null;
+  dm_profile_id: Id | null;
+  created_at: IsoDateTime;
+}
+
+export interface PageInfoDto {
   page: number;
-  pageSize: number;
+  page_size: number;
   total: number;
-  totalPages: number;
+  total_pages: number;
 }
 
-export interface Paginated<T> {
+export interface PaginatedDto<T> {
   items: T[];
-  pageInfo: PageInfo;
+  page_info: PageInfoDto;
 }
 
-export interface PageQuery {
-  page?: number;
-  pageSize?: number;
+// ---------- C1 请求体 ----------
+
+export interface RegisterRequest {
+  phone: string;
+  password: string;
+  nickname: string;
 }
 
-export interface SessionQuery extends PageQuery {
-  scriptId?: Id;
-  from?: IsoDateTime;
-  to?: IsoDateTime;
-  availableOnly?: boolean;
-}
-
-export interface ScriptQuery extends PageQuery {
-  search?: string;
-  difficulty?: ScriptDifficulty;
-  minPlayers?: number;
-  maxPlayers?: number;
-}
-
-export interface SignInRequest {
-  account: string;
+export interface LoginRequest {
+  phone: string;
   password: string;
 }
 
-export interface SessionResponse {
-  user: UserSummary;
-  expiresAt: IsoDateTime;
+export interface UpdateMeRequest {
+  nickname?: string;
 }
 
-export interface CreateBookingRequest {
-  sessionId: Id;
-  playerCount: number;
-  note?: string;
+export interface CreateStaffRequest {
+  phone: string;
+  password: string;
+  nickname: string;
+  role: Extract<UserRole, "dm" | "manager">;
 }
 
-export interface UpdateBookingStatusRequest {
-  status: Extract<BookingStatus, "confirmed" | "completed" | "cancelled">;
-  reason?: string;
-}
-
-export interface AdminOverview {
-  activeScripts: number;
-  upcomingSessions: number;
-  todayBookings: number;
-  registeredCustomers: number;
-}
-
-export interface AdminUserRow extends UserSummary {
-  email: string | null;
-  phone: string | null;
-  createdAt: IsoDateTime;
-}
-
-export interface AdminUserQuery extends PageQuery {
-  search?: string;
-  role?: UserRole;
+export interface UpdateStaffRequest {
+  nickname?: string;
+  role?: Extract<UserRole, "dm" | "manager">;
   status?: UserStatus;
+  new_password?: string;
 }
 
-export interface UpdateUserRequest {
-  displayName?: string;
-  role?: UserRole;
-  status?: UserStatus;
-  memberLevelId?: Id | null;
-  points?: number;
+export interface StaffQuery {
+  role?: Extract<UserRole, "dm" | "manager" | "boss">;
 }
 
 export interface ApiContracts {
-  "POST /api/v1/auth/sign-in": {
-    body: SignInRequest;
-    response: ApiResult<SessionResponse>;
+  "POST /api/auth/register": {
+    body: RegisterRequest;
+    response: ApiResponse<MeDto>;
   };
-  "POST /api/v1/auth/sign-out": {
+  "POST /api/auth/login": {
+    body: LoginRequest;
+    response: ApiResponse<MeDto>;
+  };
+  "POST /api/auth/logout": {
     body: undefined;
-    response: ApiResult<{ signedOut: true }>;
+    response: ApiResponse<{ signed_out: true }>;
   };
-  "GET /api/v1/auth/session": {
+  "GET /api/auth/csrf": {
     query: undefined;
-    response: ApiResult<SessionResponse | null>;
+    response: ApiResponse<{ csrf_token: string }>;
   };
-  "GET /api/v1/me": {
+  "GET /api/me": {
     query: undefined;
-    response: ApiResult<UserSummary>;
+    response: ApiResponse<MeDto>;
   };
-  "GET /api/v1/scripts": {
-    query: ScriptQuery;
-    response: ApiResult<Paginated<ScriptSummary>>;
+  "PATCH /api/me": {
+    body: UpdateMeRequest;
+    response: ApiResponse<MeDto>;
   };
-  "GET /api/v1/scripts/:slug": {
-    params: { slug: string };
-    response: ApiResult<ScriptDetail>;
+  "GET /api/admin/staff": {
+    query: StaffQuery;
+    response: ApiResponse<StaffDto[]>;
   };
-  "GET /api/v1/dms": {
-    query: PageQuery;
-    response: ApiResult<Paginated<DmSummary>>;
+  "POST /api/admin/staff": {
+    body: CreateStaffRequest;
+    response: ApiResponse<StaffDto>;
   };
-  "GET /api/v1/costumes": {
-    query: PageQuery;
-    response: ApiResult<Paginated<CostumeSummary>>;
-  };
-  "GET /api/v1/sessions": {
-    query: SessionQuery;
-    response: ApiResult<Paginated<GameSession>>;
-  };
-  "GET /api/v1/bookings/me": {
-    query: PageQuery & { status?: BookingStatus };
-    response: ApiResult<Paginated<Booking>>;
-  };
-  "POST /api/v1/bookings": {
-    body: CreateBookingRequest;
-    response: ApiResult<Booking>;
-  };
-  "POST /api/v1/bookings/:id/cancel": {
+  "PATCH /api/admin/staff/:id": {
     params: { id: Id };
-    body: { reason?: string };
-    response: ApiResult<Booking>;
-  };
-  "GET /api/v1/gifts": {
-    query: PageQuery;
-    response: ApiResult<Paginated<GiftDisplayItem>>;
-  };
-  "GET /api/v1/admin/overview": {
-    query: undefined;
-    response: ApiResult<AdminOverview>;
-  };
-  "GET /api/v1/admin/users": {
-    query: AdminUserQuery;
-    response: ApiResult<Paginated<AdminUserRow>>;
-  };
-  "PATCH /api/v1/admin/users/:id": {
-    params: { id: Id };
-    body: UpdateUserRequest;
-    response: ApiResult<AdminUserRow>;
-  };
-  "GET /api/v1/admin/bookings": {
-    query: PageQuery & { status?: BookingStatus; sessionId?: Id };
-    response: ApiResult<Paginated<Booking>>;
-  };
-  "PATCH /api/v1/admin/bookings/:id/status": {
-    params: { id: Id };
-    body: UpdateBookingStatusRequest;
-    response: ApiResult<Booking>;
+    body: UpdateStaffRequest;
+    response: ApiResponse<StaffDto>;
   };
 }
 

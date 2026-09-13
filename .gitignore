@@ -14,6 +14,8 @@
 .env.local
 .env.*.local
 !.env.example
+# 测试环境变量含本机口令，不入库
+.env.test
 
 # testing
 /coverage

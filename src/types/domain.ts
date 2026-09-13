@@ -7,28 +7,38 @@ export type UserStatus = "active" | "disabled";
 export type ScriptDifficulty = "beginner" | "intermediate" | "advanced";
 export type ScriptStatus = "draft" | "published" | "archived";
 export type CostumeStatus = "available" | "maintenance" | "retired";
+// C1 仅声明契约（共享协议 §5），实体表随 C3 迁移。
 export type GameSessionStatus =
-  "scheduled" | "open" | "full" | "completed" | "cancelled";
-export type BookingStatus = "pending" | "confirmed" | "completed" | "cancelled";
+  | "draft"
+  | "open"
+  | "full"
+  | "locked"
+  | "running"
+  | "finished"
+  | "cancelled";
+export type BookingStatus = "joined" | "locked" | "finished" | "cancelled" | "jumped";
+export type BookingRequestStatus = "pending" | "approved" | "rejected";
 
 export interface MemberLevel {
   id: Id;
   code: string;
   name: string;
   rank: number;
-  pointsThreshold: number;
+  topupThreshold: MoneyAmount;
   discountRate: string;
   benefits: string[];
 }
 
 export interface UserSummary {
   id: Id;
-  displayName: string;
-  avatarUrl: string | null;
+  phone: string;
+  nickname: string;
   role: UserRole;
   status: UserStatus;
-  memberLevel: MemberLevel | null;
+  balance: MoneyAmount;
   points: number;
+  totalTopup: MoneyAmount;
+  memberLevel: MemberLevel | null;
 }
 
 export interface ScriptSummary {
@@ -53,7 +63,7 @@ export interface ScriptDetail extends ScriptSummary {
 
 export interface DmSummary {
   id: Id;
-  displayName: string;
+  nickname: string;
   avatarUrl: string | null;
   bio: string | null;
   rating: string | null;

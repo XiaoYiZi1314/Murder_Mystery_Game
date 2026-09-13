@@ -31,7 +31,7 @@ services:
       - app-network
 
   mysql:
-    image: mysql:8.4
+    image: mysql:8.0
     restart: unless-stopped
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE:?Set MYSQL_DATABASE in .env}

@@ -27,6 +27,7 @@ const adminItems: NavItem[] = [
   { key: "finance", href: "/admin/finance", label: "财务" },
   { key: "content", href: "/admin/content", label: "内容" },
   { key: "ops", href: "/admin/ops", label: "运营处理" },
+  { key: "staff", href: "/admin/staff", label: "员工" },
 ];
 
 export function SiteHeader({

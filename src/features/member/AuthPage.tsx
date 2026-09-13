@@ -1,30 +1,65 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import { Button, Input, useToast } from "@/components/ui";
 import { Screen, SiteFooter, SiteHeader } from "@/components/layout";
+import { apiFetch, errorMessage, type ApiClientError } from "@/lib/api/client";
+import type { MeDto } from "@/lib/api/contracts";
 
 export type AuthTab = "login" | "register";
 
 export function AuthPage({ initialTab = "login" }: { initialTab?: AuthTab }) {
   const [tab, setTab] = useState<AuthTab>(initialTab);
-  const [completed, setCompleted] = useState<AuthTab | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const toast = useToast();
+  const router = useRouter();
 
   function activate(next: AuthTab) {
     setTab(next);
-    setCompleted(null);
+    setFormError(null);
   }
 
-  function submit(event: FormEvent<HTMLFormElement>, kind: AuthTab) {
+  function readForm(event: FormEvent<HTMLFormElement>): { phone: string; password: string; nickname: string } {
+    const data = new FormData(event.currentTarget);
+    return {
+      phone: String(data.get("phone") ?? "").trim(),
+      password: String(data.get("password") ?? ""),
+      nickname: String(data.get("nickname") ?? "").trim(),
+    };
+  }
+
+  async function submit(event: FormEvent<HTMLFormElement>, kind: AuthTab) {
     event.preventDefault();
+    if (busy) return;
     if (!event.currentTarget.checkValidity()) {
       event.currentTarget.reportValidity();
       return;
     }
-    event.currentTarget.reset();
-    setCompleted(kind);
-    toast(kind === "login" ? "登录演示已完成" : "注册演示已完成");
+    const { phone, password, nickname } = readForm(event);
+    setBusy(true);
+    setFormError(null);
+    try {
+      if (kind === "login") {
+        const me = await apiFetch<MeDto>("/api/auth/login", { method: "POST", body: { phone, password } });
+        toast(`欢迎回来，${me.nickname}`);
+      } else {
+        const me = await apiFetch<MeDto>("/api/auth/register", {
+          method: "POST",
+          body: { phone, password, nickname },
+        });
+        toast(`注册成功，欢迎 ${me.nickname}`);
+      }
+      router.push("/me");
+      router.refresh();
+    } catch (error: unknown) {
+      const typed = error as ApiClientError;
+      const detail = typed?.fieldErrors ? Object.values(typed.fieldErrors).flat().join("；") : "";
+      setFormError(detail ? `${errorMessage(error)}：${detail}` : errorMessage(error));
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -44,7 +79,7 @@ export function AuthPage({ initialTab = "login" }: { initialTab?: AuthTab }) {
                 登录后可以查看完整剧本详情、报名场次、管理自己的余额与积分，也可以留下评价。
               </p>
               <div className="auth-note">
-                当前为前端演示，不会发送真实请求，也不会保存密码。
+                账号真实可用：密码经 argon2id 单向加密保存，连续输错会被暂时锁定。
               </div>
             </div>
             <div className="auth-card" data-od-id="auth-card">
@@ -74,16 +109,17 @@ export function AuthPage({ initialTab = "login" }: { initialTab?: AuthTab }) {
               </div>
 
               <form
-                className={`auth-form${completed || tab !== "login" ? " form-hidden" : ""}`}
+                className={`auth-form${tab !== "login" ? " form-hidden" : ""}`}
                 id="login-form"
                 data-auth-form="login"
-                aria-hidden={Boolean(completed) || tab !== "login"}
+                aria-hidden={tab !== "login"}
                 onSubmit={(event) => submit(event, "login")}
               >
                 <div className="field">
                   <label htmlFor="phone">手机号</label>
                   <Input
                     id="phone"
+                    name="phone"
                     type="tel"
                     inputMode="tel"
                     autoComplete="tel"
@@ -95,16 +131,23 @@ export function AuthPage({ initialTab = "login" }: { initialTab?: AuthTab }) {
                   <label htmlFor="password">密码</label>
                   <Input
                     id="password"
+                    name="password"
                     type="password"
                     autoComplete="current-password"
                     placeholder="请输入密码"
                     required
                   />
-                  <p className="field-help">演示环境不会发送真实请求。</p>
+                  <p className="field-help">连续输错会被暂时锁定，请确认后再试。</p>
                 </div>
+                {tab === "login" && formError ? (
+                  <p className="field-error" role="alert" data-od-id="auth-error">
+                    {formError}
+                  </p>
+                ) : null}
                 <Button
                   variant="primary"
                   type="submit"
+                  loading={busy && tab === "login"}
                   data-od-id="login-submit"
                 >
                   登录十三雾
@@ -112,16 +155,17 @@ export function AuthPage({ initialTab = "login" }: { initialTab?: AuthTab }) {
               </form>
 
               <form
-                className={`auth-form${completed || tab !== "register" ? " form-hidden" : ""}`}
+                className={`auth-form${tab !== "register" ? " form-hidden" : ""}`}
                 id="register-form"
                 data-auth-form="register"
-                aria-hidden={Boolean(completed) || tab !== "register"}
+                aria-hidden={tab !== "register"}
                 onSubmit={(event) => submit(event, "register")}
               >
                 <div className="field">
                   <label htmlFor="register-phone">手机号</label>
                   <Input
                     id="register-phone"
+                    name="phone"
                     type="tel"
                     inputMode="tel"
                     autoComplete="tel"
@@ -133,6 +177,7 @@ export function AuthPage({ initialTab = "login" }: { initialTab?: AuthTab }) {
                   <label htmlFor="register-password">设置密码</label>
                   <Input
                     id="register-password"
+                    name="password"
                     type="password"
                     autoComplete="new-password"
                     placeholder="至少 6 位"
@@ -144,39 +189,26 @@ export function AuthPage({ initialTab = "login" }: { initialTab?: AuthTab }) {
                   <label htmlFor="nickname">系统内昵称</label>
                   <Input
                     id="nickname"
+                    name="nickname"
                     type="text"
                     placeholder="例如：林间有雾"
                     required
                   />
                 </div>
+                {tab === "register" && formError ? (
+                  <p className="field-error" role="alert" data-od-id="auth-error">
+                    {formError}
+                  </p>
+                ) : null}
                 <Button
                   variant="primary"
                   type="submit"
+                  loading={busy && tab === "register"}
                   data-od-id="register-submit"
                 >
                   创建顾客账号
                 </Button>
               </form>
-
-              <div
-                className={`success${completed ? " is-visible" : ""}`}
-                id="auth-success"
-                data-od-id="auth-success"
-                aria-hidden={!completed}
-              >
-                <div className="success-mark">完成</div>
-                <strong>
-                  {completed === "register"
-                    ? "注册演示已完成。"
-                    : "登录演示已完成。"}
-                </strong>
-                <p>
-                  这是前端演示，未登录或创建真实账号，也不会保存你输入的密码。
-                </p>
-                <Button variant="secondary" href="/me" data-od-id="auth-me">
-                  进入个人中心
-                </Button>
-              </div>
             </div>
           </div>
         </section>

@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Button, Card, useToast } from "@/components/ui";
+import { useRouter } from "next/navigation";
+import { Button, Card, Input, useToast } from "@/components/ui";
 import { Screen, SiteFooter, SiteHeader } from "@/components/layout";
+import { apiFetch, clearCsrfCache, errorMessage, getCsrfToken } from "@/lib/api/client";
+import type { MeDto } from "@/lib/api/contracts";
 import { MemberBadge, MemberHeaderActions, WalletLedger } from "./components";
 import { ledgerEntries } from "./data";
 
@@ -24,12 +27,65 @@ const accountLinks: {
 
 export function MePage({ initialTab = "overview" }: { initialTab?: MeTab }) {
   const toast = useToast();
+  const router = useRouter();
+  const [me, setMe] = useState<MeDto | null>(null);
+  const [nickname, setNickname] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
     if (initialTab === "overview") return;
     const hash = `#${initialTab}`;
     if (window.location.hash !== hash) window.location.replace(hash);
   }, [initialTab]);
+
+  useEffect(() => {
+    let cancelled = false;
+    apiFetch<MeDto>("/api/me")
+      .then((data) => {
+        if (cancelled) return;
+        setMe(data);
+        setNickname(data.nickname);
+      })
+      .catch(() => {
+        if (!cancelled) router.replace("/login");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
+
+  async function saveNickname() {
+    const next = nickname.trim();
+    if (!next || next === me?.nickname) return;
+    setSaving(true);
+    try {
+      const csrf = await getCsrfToken();
+      const updated = await apiFetch<MeDto>("/api/me", { method: "PATCH", body: { nickname: next }, csrf });
+      setMe(updated);
+      setNickname(updated.nickname);
+      toast("昵称已更新");
+    } catch (error: unknown) {
+      toast(errorMessage(error, "保存失败，请稍后重试"));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function signOut() {
+    setSigningOut(true);
+    try {
+      const csrf = await getCsrfToken();
+      await apiFetch("/api/auth/logout", { method: "POST", body: {}, csrf });
+    } catch {
+      // 会话可能已失效，仍执行本地退出
+    } finally {
+      clearCsrfCache();
+      setSigningOut(false);
+      router.replace("/login");
+      router.refresh();
+    }
+  }
 
   return (
     <Screen name="me">
@@ -42,7 +98,7 @@ export function MePage({ initialTab = "overview" }: { initialTab?: MeTab }) {
             <p className="eyebrow">C 端 / 我的</p>
             <div className="row-between">
               <div>
-                <h1 data-od-id="page-title">林间有雾</h1>
+                <h1 data-od-id="page-title">{me?.nickname ?? "…"}</h1>
                 <p className="lead">
                   你的每一次入戏、每一笔积分和每一场预约，都在这里留档。
                 </p>
@@ -73,11 +129,11 @@ export function MePage({ initialTab = "overview" }: { initialTab?: MeTab }) {
                 data-od-id="member-balance"
               >
                 <span className="label">可用储值余额</span>
-                <div className="amount num">¥ 680.00</div>
+                <div className="amount num">¥ {me ? Number(me.balance).toFixed(2) : "…"}</div>
                 <div className="row-between mini-stat">
                   <span className="label">当前积分</span>
-                  <strong className="num">1,260</strong>
-                  <span className="label">距离栖月还差 ¥820</span>
+                  <strong className="num">{me ? me.points.toLocaleString("zh-CN") : "…"}</strong>
+                  <span className="label">{me?.member_level ? `会员等级 ${me.member_level.name}` : "…"}</span>
                 </div>
               </div>
 
@@ -115,13 +171,19 @@ export function MePage({ initialTab = "overview" }: { initialTab?: MeTab }) {
 
                 <Card id="member" data-od-id="member-benefits">
                   <p className="eyebrow">会员权益</p>
-                  <h3>望遥 · 9.5 折</h3>
+                  <h3>
+                    {me?.member_level
+                      ? `${me.member_level.name} · ${(Number(me.member_level.discount_rate) * 10).toFixed(1)} 折`
+                      : "…"}
+                  </h3>
                   <div style={{ margin: "15px 0 9px" }} className="progress">
-                    <span style={{ width: "46%" }} />
+                    <span style={{ width: `${Math.min(100, (me?.member_level?.rank ?? 0) * 20)}%` }} />
                   </div>
                   <div className="row-between">
-                    <span className="meta">累计储值 ¥680</span>
-                    <span className="meta">升级至栖月 ¥1,500</span>
+                    <span className="meta">累计储值 ¥{me ? Number(me.total_topup).toFixed(0) : "…"}</span>
+                    <span className="meta">
+                      {me?.member_level ? `当前门槛 ¥${Number(me.member_level.topup_threshold).toFixed(0)}` : "…"}
+                    </span>
                   </div>
                   <p
                     style={{
@@ -130,7 +192,7 @@ export function MePage({ initialTab = "overview" }: { initialTab?: MeTab }) {
                       marginBottom: 0,
                     }}
                   >
-                    当前可享剧本 9.5 折，生日月赠积分。
+                    当前可享剧本 {(Number(me?.member_level?.discount_rate ?? 1) * 10).toFixed(1)} 折，生日月赠积分。
                   </p>
                   <Button variant="ghost" className="btn-arrow" href="/gifts">
                     浏览积分礼品
@@ -153,6 +215,36 @@ export function MePage({ initialTab = "overview" }: { initialTab?: MeTab }) {
                   </Button>
                 </div>
                 <WalletLedger entries={ledgerEntries} compact />
+              </Card>
+
+              <Card id="account" data-od-id="account-settings">
+                <div className="row-between">
+                  <div>
+                    <p className="eyebrow">账号设置</p>
+                    <h3>昵称与登录</h3>
+                  </div>
+                  <span className="meta">{me?.phone ?? "…"}</span>
+                </div>
+                <div className="field">
+                  <label htmlFor="me-nickname">系统内昵称</label>
+                  <Input
+                    id="me-nickname"
+                    name="nickname"
+                    type="text"
+                    value={nickname}
+                    maxLength={20}
+                    onChange={(event) => setNickname(event.target.value)}
+                    placeholder="1–20 个字符"
+                  />
+                </div>
+                <div className="row" style={{ marginTop: 18 }}>
+                  <Button variant="secondary" type="button" loading={saving} onClick={() => void saveNickname()}>
+                    保存昵称
+                  </Button>
+                  <Button variant="ghost" type="button" loading={signingOut} onClick={() => void signOut()}>
+                    退出登录
+                  </Button>
+                </div>
               </Card>
 
               <div className="grid-2">
